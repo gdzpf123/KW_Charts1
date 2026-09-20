@@ -1,0 +1,107 @@
+/* =========================================================
+   header.css
+   页面级通用头部（PageHeader 组件）
+   -
+   结构：
+       <div class="page-header">
+           <button class="page-header-back">‹</button>  <!-- 仅二级页面 -->
+           <div class="page-header-title">
+               <h1>标题</h1>
+               <p>副标题</p>
+           </div>
+       </div>
+   -
+   说明：
+   - 替代了原先散落在各页面的 .detail-header / .page-header / .page-heading
+   - 返回按钮的显示与否由 JS 在挂载时根据 data-show-back 决定
+   ========================================================= */
+
+.page-header {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+
+/*
+   标题文字居中显示。
+   当存在返回按钮时，标题区需要避开左侧的按钮，
+   所以给二级页面额外加 .has-back class，左侧 padding 加大；
+   一级页面则保持左右等宽 padding，让标题完美居中。
+*/
+
+.page-header.has-back {
+    padding-left: 60px;
+}
+
+
+/* 返回按钮：绝对定位在左侧，与标题横向并列 */
+
+.page-header-back {
+    position: absolute;
+
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 18px;
+
+    background: #f5f5f5;
+
+    font-size: 28px;
+    line-height: 30px;
+
+    cursor: pointer;
+
+    transition:
+        transform .15s ease,
+        background .15s ease;
+}
+
+.page-header-back:active {
+    transform: translateY(-50%) scale(.92);
+    background: #e8e8e8;
+}
+
+
+/* 标题区：文字全部居中 */
+
+.page-header-title {
+    flex: 1;
+    min-width: 0;
+
+    text-align: center;
+}
+
+.page-header-title h1 {
+    margin: 0;
+
+    color: var(--text);
+
+    font-size: 20px;
+    font-weight: 700;
+
+    letter-spacing: -.3px;
+
+    text-align: center;
+}
+
+.page-header-title p {
+    margin: 5px 0 0;
+
+    color: #999;
+
+    font-size: 13px;
+
+    text-align: center;
+}

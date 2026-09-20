@@ -1,0 +1,78 @@
+/* =========================================================
+   layout.css
+   全局布局：App 容器、页面主区、页面切换动画、错误态
+   ========================================================= */
+
+.app {
+    width: 100%;
+    max-width: 680px;
+    min-height: 100vh;
+
+    margin: 0 auto;
+
+    padding-bottom:
+        calc(78px + env(safe-area-inset-bottom));
+}
+
+
+/* =========================================================
+   页面主区
+   ========================================================= */
+
+.content {
+    padding: 0 14px;
+}
+
+.page {
+    display: block;
+    animation: pageIn .2s ease;
+}
+
+@keyframes pageIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+
+/* =========================================================
+   页面加载失败
+   ========================================================= */
+
+.page-error {
+    min-height: 260px;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+}
+
+.page-error-icon {
+    font-size: 34px;
+    margin-bottom: 12px;
+}
+
+.page-error-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.page-error-message {
+    margin-top: 6px;
+
+    color: var(--subtext);
+
+    font-size: 12px;
+}

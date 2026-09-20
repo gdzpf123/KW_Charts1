@@ -1,0 +1,130 @@
+/* =========================================================
+   history.css
+   历史经营数据页
+
+   说明：
+   - 页面级头部标题已统一为 PageHeader 组件（css/header.css），
+     原先的 .page-heading 样式不再使用
+   ========================================================= */
+
+
+/* 历史列表 */
+
+.history-list {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.history-item {
+    position: relative;
+
+    padding: 15px;
+    padding-right: 32px;
+
+    background: var(--card);
+
+    border-radius: 16px;
+
+    box-shadow: var(--shadow);
+
+    cursor: pointer;
+
+    transition:
+        transform .15s ease;
+
+    user-select: none;
+
+    -webkit-tap-highlight-color: rgba(0,0,0,.04);
+}
+
+.history-item:active {
+    transform: scale(.985);
+}
+
+.history-arrow {
+    position: absolute;
+
+    right: 14px;
+    bottom: 14px;
+
+    color: #c2c7d0;
+
+    font-size: 18px;
+    line-height: 1;
+
+    pointer-events: none;
+}
+
+.history-head {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 13px;
+}
+
+.history-month {
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.history-store {
+    padding:
+        4px
+        8px;
+
+    color: #727882;
+
+    background: #f5f6f8;
+
+    border-radius: 7px;
+
+    font-size: 10px;
+}
+
+.history-values {
+    display: grid;
+
+    /* 4 项指标（营业收入/毛利率/净利率/净利润）排成 2×2 */
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+
+    padding-top: 11px;
+
+    border-top:
+        1px solid var(--line);
+}
+
+.history-value {
+    min-width: 0;
+}
+
+.history-value span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--subtext);
+
+    font-size: 10px;
+}
+
+.history-value strong {
+    display: block;
+
+    color: var(--text);
+
+    font-size: 13px;
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

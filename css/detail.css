@@ -1,0 +1,156 @@
+/* =========================================================
+   detail.css
+   详情页通用样式（不含头部，头部由 PageHeader 组件处理）：
+   - .supplier-summary     顶部汇总（货佬 / 耗材）
+   - .summary-*            汇总内部元素
+   - .supplier-section     列表卡片
+   - .supplier-list/row/*  列表行
+   - .rent-*               店铺租金列表
+   ========================================================= */
+
+
+/* =========================================================
+   详情页汇总区
+   ========================================================= */
+
+.supplier-summary {
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.summary-title {
+    color: #888;
+    font-size: 14px;
+}
+
+.summary-total {
+    margin-top: 8px;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.summary-difference {
+    margin-top: 8px;
+    color: #999;
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   列表 Section（货佬 / 耗材详情）
+   ========================================================= */
+
+.supplier-section {
+    margin-bottom: 12px;
+}
+
+.supplier-section .card-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.supplier-section .card-title h2 {
+    margin: 0;
+}
+
+.supplier-section .card-title p {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #999;
+}
+
+.supplier-section .card-title strong {
+    font-size: 16px;
+}
+
+
+/* =========================================================
+   列表行（货佬 / 耗材）
+   ========================================================= */
+
+.supplier-list {
+    margin-top: 12px;
+}
+
+.supplier-row {
+    display: flex;
+    align-items: center;
+
+    min-height: 48px;
+
+    border-top: 1px solid #f1f1f1;
+}
+
+.supplier-index {
+    width: 28px;
+
+    color: #999;
+
+    font-size: 12px;
+
+    text-align: center;
+}
+
+.supplier-name {
+    flex: 1;
+
+    padding: 8px 10px;
+
+    font-size: 14px;
+}
+
+.supplier-amount {
+    font-size: 14px;
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.supplier-empty {
+    padding: 30px 10px;
+
+    text-align: center;
+
+    color: #999;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   店铺租金列表（store_rent.html）
+   ========================================================= */
+
+.rent-trend-chart {
+    width: 100%;
+    height: 300px;
+    min-height: 300px;
+}
+
+.rent-list {
+    width: 100%;
+}
+
+.rent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.rent-item:last-child {
+    border-bottom: none;
+}
+
+.rent-month {
+    font-size: 14px;
+    color: #666666;
+}
+
+.rent-value {
+    font-size: 16px;
+    font-weight: 600;
+}

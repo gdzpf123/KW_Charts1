@@ -1,0 +1,17 @@
+{
+  "month": "2026-08",
+  "description": "这里作为以后正式数据文件的示例。第一版页面目前读取 js/data.js 中的数据。",
+  "stores": [
+    {
+      "store": "西乡店",
+      "revenue": 761106.12,
+      "cost": 312500,
+      "grossProfit": 448606.12,
+      "grossMargin": 58.96,
+      "fixedExpense": 62000,
+      "otherExpense": 28000,
+      "hqExpense": 30000,
+      "netProfit": 328606.12
+    }
+  ]
+}

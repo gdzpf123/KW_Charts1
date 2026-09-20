@@ -1,0 +1,122 @@
+/* =========================================================
+   bottom-nav.css
+   底部 Tab 导航
+   ========================================================= */
+
+.bottom-nav {
+    position: fixed;
+
+    z-index: 20;
+
+    left: 50%;
+    bottom: 0;
+
+    transform: translateX(-50%);
+
+    width: min(680px, 100%);
+
+    /**
+     * 2026-09-20：
+     * - 从 grid 改成 flex，让所有 item 强制横向并列成一排。
+     * - height 用固定值（不再随 item 数量变化），
+     *   这样二级页面恢复时以及未来新增 item 都不会撑高。
+     */
+
+    display: flex;
+    align-items: stretch;
+
+    height: 60px;
+
+    box-sizing: border-box;
+
+    padding:
+        0
+        12px
+        calc(7px + env(safe-area-inset-bottom));
+
+    background:
+        rgba(255, 255, 255, .96);
+
+    border-top:
+        1px solid rgba(220, 224, 230, .75);
+
+    box-shadow:
+        0 -4px 20px rgba(20, 25, 30, .025);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    transition:
+        transform .25s ease,
+        opacity .2s ease;
+}
+
+/* =========================================================
+   二级页面时隐藏底部 BottomBar
+   .bottom-nav-hidden 由 app.js 在非 Tab 页面时自动加上
+   ========================================================= */
+
+.bottom-nav.bottom-nav-hidden {
+
+    transform:
+        translate(-50%, 100%);
+
+    opacity: 0;
+
+    pointer-events: none;
+}
+
+.nav-item {
+    display: flex;
+
+    flex: 1;
+    min-width: 0;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 2px;
+
+    padding: 4px 2px;
+
+    background: transparent;
+
+    color: #969ba3;
+
+    font-size: 10px;
+
+    cursor: pointer;
+
+    /**
+     * 防止 item 被挤压到比内容更窄，
+     * 4 个 item 时（分析2）也不会破版
+     */
+
+    white-space: nowrap;
+    overflow: hidden;
+
+    transition:
+        color .15s ease,
+        transform .15s ease;
+}
+
+.nav-icon {
+    height: 22px;
+
+    font-size: 21px;
+
+    line-height: 22px;
+}
+
+.nav-item.active {
+    color: var(--accent);
+
+    font-weight: 650;
+}
+
+.nav-item:active {
+    transform: scale(.92);
+}

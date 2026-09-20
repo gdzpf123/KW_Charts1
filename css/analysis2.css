@@ -1,0 +1,577 @@
+/* =========================================================
+   analysis2.css
+   单店分析 · 股东视角
+   ========================================================= */
+
+
+/* =========================================================
+   顶部筛选栏
+   ========================================================= */
+
+.a2-filter {
+
+    display: block;
+
+    padding: 14px 14px 10px;
+
+}
+
+
+.a2-filter-row {
+
+    display: flex;
+
+    align-items: center;
+
+    margin-bottom: 10px;
+
+}
+
+
+.a2-filter-row:last-child {
+
+    margin-bottom: 0;
+
+}
+
+
+.a2-filter-label {
+
+    flex: 0 0 auto;
+
+    margin-right: 10px;
+
+    color: var(--subtext);
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    letter-spacing: .2px;
+
+}
+
+
+.a2-chip-group {
+
+    flex: 1 1 auto;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+}
+
+
+.a2-chip {
+
+    padding: 6px 12px;
+
+    border-radius: 999px;
+
+    background: #f2f4f7;
+
+    color: #6b757e;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background .15s ease,
+        color .15s ease,
+        transform .15s ease;
+
+}
+
+
+.a2-chip:active {
+
+    transform: scale(.95);
+
+}
+
+
+.a2-chip.active {
+
+    background: var(--accent);
+
+    color: #ffffff;
+
+}
+
+
+/* =========================================================
+   KPI 涨跌卡片网格
+   ========================================================= */
+
+.a2-kpi-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-bottom: 13px;
+
+}
+
+
+.a2-kpi-card {
+
+    padding: 13px 14px;
+
+    background: var(--card);
+
+    border-radius: 16px;
+
+    box-shadow: var(--shadow);
+
+}
+
+
+.a2-kpi-label {
+
+    color: var(--subtext);
+
+    font-size: 12px;
+
+    font-weight: 500;
+
+}
+
+
+.a2-kpi-value {
+
+    margin-top: 4px;
+
+    color: var(--text);
+
+    font-size: 20px;
+
+    font-weight: 750;
+
+    letter-spacing: -.3px;
+
+}
+
+
+.a2-kpi-changes {
+
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 8px;
+
+}
+
+
+.a2-kpi-change {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 3px;
+
+    padding: 3px 8px;
+
+    border-radius: 8px;
+
+    background: #f5f6f8;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    color: var(--subtext);
+
+}
+
+
+.a2-kpi-change.up {
+
+    background: var(--green-soft);
+
+    color: var(--green);
+
+}
+
+
+.a2-kpi-change.down {
+
+    background: var(--accent-soft);
+
+    color: var(--accent);
+
+}
+
+
+.a2-kpi-change.neutral {
+
+    background: #f0f1f3;
+
+    color: var(--muted);
+
+}
+
+
+/* =========================================================
+   趋势图辅助开关
+   ========================================================= */
+
+.a2-trend-toggles {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    padding: 0 16px 6px;
+
+}
+
+
+.a2-toggle {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--subtext);
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    user-select: none;
+
+}
+
+
+.a2-toggle input {
+
+    width: 16px;
+
+    height: 16px;
+
+    accent-color: var(--accent);
+
+    cursor: pointer;
+
+}
+
+
+/* =========================================================
+   成本结构：堆叠 + 饼图
+   ========================================================= */
+
+.a2-cost-divider {
+
+    margin:
+        4px
+        16px
+        8px;
+
+    padding-top: 10px;
+
+    border-top: 1px dashed #e8ebef;
+
+    color: var(--subtext);
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    letter-spacing: .3px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 8px;
+
+}
+
+
+.a2-cost-divider-label {
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+
+.a2-cost-reset {
+
+    flex: 0 0 auto;
+
+    background: transparent;
+
+    border: 1px solid #e5e8ec;
+
+    color: var(--accent, #3478f6);
+
+    padding: 2px 9px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+
+    line-height: 1.4;
+
+    font-weight: 500;
+
+    letter-spacing: .2px;
+
+    cursor: pointer;
+
+    transition:
+        background .15s ease,
+        border-color .15s ease,
+        transform .15s ease;
+
+}
+
+
+.a2-cost-reset:active {
+
+    transform: scale(.94);
+
+}
+
+
+.a2-cost-reset:hover {
+
+    background: rgba(52, 120, 246, .06);
+
+    border-color: var(--accent, #3478f6);
+
+}
+
+
+/* =========================================================
+   瀑布图
+   ========================================================= */
+
+.a2-waterfall {
+
+    height: 300px;
+
+}
+
+
+/**
+ * 瀑布图标题下方的公式说明。
+ *
+ * 用意：展示「营业收入 = 8 项扣减 + 净利润」的口径，
+ * 与瀑布节点一一对应，方便股东一眼看出当前图表的拆解逻辑。
+ */
+
+.a2-waterfall-formula {
+
+    margin: 6px 16px 10px;
+
+    padding: 8px 12px;
+
+    background: #f6f8fb;
+
+    border: 1px dashed #dde3eb;
+
+    border-radius: 8px;
+
+    color: #6b7480;
+
+    font-size: 11px;
+
+    font-weight: 500;
+
+    line-height: 1.5;
+
+    letter-spacing: .1px;
+
+    word-break: break-all;
+
+}
+
+
+.a2-waterfall-fallback {
+
+    display: none;
+
+    margin: 0 16px 14px;
+
+    padding: 14px;
+
+    background: #fafbfc;
+
+    border-radius: 12px;
+
+    border: 1px solid var(--line);
+
+}
+
+
+.a2-waterfall-fallback.show {
+
+    display: block;
+
+}
+
+
+.a2-waterfall-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 7px 0;
+
+    border-bottom: 1px dashed #eef0f3;
+
+    font-size: 13px;
+
+}
+
+
+.a2-waterfall-row:last-child {
+
+    border-bottom: 0;
+
+}
+
+
+.a2-waterfall-row.total {
+
+    margin-top: 4px;
+
+    padding-top: 12px;
+
+    border-top: 2px solid var(--text);
+
+    border-bottom: 0;
+
+    font-weight: 700;
+
+    font-size: 14px;
+
+}
+
+
+.a2-waterfall-name {
+
+    color: var(--text);
+
+}
+
+
+.a2-waterfall-amount {
+
+    font-variant-numeric: tabular-nums;
+
+    color: var(--text);
+
+}
+
+
+.a2-waterfall-amount.negative {
+
+    color: var(--accent);
+
+}
+
+
+.a2-waterfall-amount.positive {
+
+    color: var(--green);
+
+}
+
+
+/* =========================================================
+   响应式
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    .a2-kpi-value {
+
+        font-size: 18px;
+
+    }
+
+
+    .a2-chip {
+
+        padding: 5px 10px;
+
+        font-size: 11px;
+
+    }
+
+
+/* =========================================================
+   经营简报 / 异常提示卡
+   ========================================================= */
+
+/**
+ * `.briefing-card` 复用了上面的 .card 样式，仅做
+ * 「可缺席」的隐显控制 + 下方简报正文的排版微调。
+ *
+ * `.a2-briefing-content` 用 <pre> + white-space: pre-wrap
+ * 保留原始换行与子条目缩进（"· 外卖运营费…"），同时
+ * 在过宽时自然换行，长文本不会溢出 H5 卡片。
+ */
+
+.briefing-card[hidden] {
+
+    display: none;
+
+}
+
+
+.a2-briefing-content {
+
+    margin: 0 16px 16px;
+
+    padding: 14px 16px;
+
+    background: #f6f8fb;
+
+    border: 1px solid var(--line);
+
+    border-radius: 10px;
+
+    color: var(--text);
+
+    font-size: 13px;
+
+    line-height: 1.7;
+
+    letter-spacing: .2px;
+
+    white-space: pre-wrap;
+
+    word-break: break-word;
+
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+    overflow-x: auto;
+
+}
+
+}

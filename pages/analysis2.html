@@ -1,0 +1,256 @@
+<section id="page-analysis2" class="page">
+
+    <!-- ==============================
+         页面头部（公共组件，由 mountPageHeader 渲染）
+         ============================== -->
+    <div id="pageHeader"
+         data-title="数据分析"
+         data-subtitle-id="analysis2Subtitle"
+         data-show-back="true">
+    </div>
+
+
+    <!-- ==============================
+         顶部筛选栏
+         ============================== -->
+
+    <section class="a2-filter card">
+
+        <div class="a2-filter-row">
+
+            <div class="a2-filter-label">
+                时间范围
+            </div>
+
+            <div class="a2-chip-group"
+                 data-filter="range">
+
+                <button
+                    class="a2-chip"
+                    data-value="6"
+                    type="button">
+                    近 6 个月
+                </button>
+
+                <button
+                    class="a2-chip active"
+                    data-value="12"
+                    type="button">
+                    近 12 个月
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="a2-filter-row">
+
+            <div class="a2-filter-label">
+                指标切换
+            </div>
+
+            <div class="a2-chip-group"
+                 data-filter="metric">
+
+                <button
+                    class="a2-chip active"
+                    data-value="revenue"
+                    type="button">
+                    营收
+                </button>
+
+                <button
+                    class="a2-chip"
+                    data-value="grossMargin"
+                    type="button">
+                    毛利率
+                </button>
+
+                <button
+                    class="a2-chip"
+                    data-value="netMargin"
+                    type="button">
+                    净利率
+                </button>
+
+                <button
+                    class="a2-chip"
+                    data-value="netProfit"
+                    type="button">
+                    净利润
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ==============================
+         核心 KPI 涨跌卡片
+         ============================== -->
+
+    <div class="a2-kpi-section">
+
+        <div class="card-title a2-kpi-title">
+            <div>
+                <h2>核心数据涨跌</h2>
+                <p>当月与上月 / 去年同月的核心指标对比</p>
+            </div>
+        </div>
+
+        <section id="a2Kpi" class="a2-kpi-grid">
+        </section>
+
+    </div>
+
+
+    <!-- ==============================
+         趋势图
+         ============================== -->
+
+    <section class="card chart-card">
+
+        <div class="card-title">
+            <div>
+                <h2>趋势走势</h2>
+                <p id="a2TrendSubtitle">加载中...</p>
+            </div>
+        </div>
+
+
+        <div class="a2-trend-toggles">
+
+            <label class="a2-toggle">
+
+                <input
+                    type="checkbox"
+                    id="a2ToggleYoY"
+                    checked>
+
+                <span>
+                    叠加同比（去年同月）
+                </span>
+
+            </label>
+
+
+            <label class="a2-toggle">
+
+                <input
+                    type="checkbox"
+                    id="a2ToggleAvg"
+                    checked>
+
+                <span>
+                    显示均值参考线
+                </span>
+
+            </label>
+
+        </div>
+
+
+        <div id="a2TrendChart" class="chart"></div>
+
+    </section>
+
+
+    <!-- ==============================
+         成本结构：堆叠柱状图 + 当月饼图
+         ============================== -->
+
+    <section class="card chart-card">
+
+        <div class="card-title">
+            <div>
+                <h2>成本结构分析</h2>
+                <p id="a2CostSubtitle">加载中...</p>
+            </div>
+        </div>
+
+
+        <div id="a2CostStackChart" class="chart"></div>
+
+
+        <div class="a2-cost-divider"
+             id="a2CostPieTitle">
+
+            <span class="a2-cost-divider-label">
+                当月成本占比
+            </span>
+
+            <button
+                type="button"
+                id="a2CostPieReset"
+                class="a2-cost-reset"
+                hidden>
+                × 恢复最新
+            </button>
+
+        </div>
+
+
+        <div id="a2CostPieChart" class="chart pie-chart"></div>
+
+    </section>
+
+
+    <!-- ==============================
+         利润瀑布图
+         ============================== -->
+
+    <section class="card chart-card">
+
+        <div class="card-title">
+            <div>
+                <h2>利润瀑布</h2>
+                <p id="a2WaterfallSubtitle">加载中...</p>
+            </div>
+        </div>
+
+
+        <div class="a2-waterfall-formula">
+            营业收入 = 货佬款项 + 员工工资 + 员工社保 + 宿舍房租 + 宿舍水电费 + 店铺水电费 + 店铺租金 + 总手续费 + 总公司运营支出 + 耗材支出 + 净利润
+        </div>
+
+
+        <div id="a2WaterfallChart" class="chart a2-waterfall"></div>
+
+
+        <!-- 瀑布图文字版（图表渲染失败时兜底） -->
+
+        <div id="a2WaterfallFallback" class="a2-waterfall-fallback">
+        </div>
+
+    </section>
+
+
+    <!-- ==============================
+         经营简报 / 异常提示
+         ==============================
+         由 JS 在加载完数据后根据 TXT 中是否存在
+         「经营简报:」段落决定是否显示。没有简报时
+         默认 hidden，渲染入口在 renderBriefing()。 -->
+
+    <section id="a2BriefingSection" class="card briefing-card" hidden>
+
+        <div class="card-title">
+            <div>
+                <h2>经营简报 / 异常提示</h2>
+                <p id="a2BriefingSubtitle">
+                    当月文字版经营简报
+                </p>
+            </div>
+        </div>
+
+
+        <pre id="a2BriefingContent" class="a2-briefing-content">
+        </pre>
+
+    </section>
+
+
+</section>

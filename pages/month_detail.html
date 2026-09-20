@@ -1,0 +1,507 @@
+<!-- ==============================
+     月结详情页
+     UI 与首页一致，但门店/月份只读（不切换）
+     ============================== -->
+
+
+<!-- ==============================
+     页面头部（公共组件，由 mountPageHeader 渲染）
+     ============================== -->
+<div id="pageHeader"
+     data-title="月结详情"
+     data-subtitle-id="monthDetailSubtitle"
+     data-show-back="true">
+</div>
+
+
+<!-- ==============================
+     门店 / 月份选择（只读展示）
+     ============================== -->
+<div class="selector-card">
+
+    <div class="selector-group">
+
+        <label>门店</label>
+
+        <div id="storeName" class="selector-value">
+            —
+        </div>
+
+    </div>
+
+    <div class="selector-group">
+
+        <label>月份</label>
+
+        <div id="monthName" class="selector-value">
+            —
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==============================
+     当月经营概览
+     ============================== -->
+
+<section class="business-overview">
+
+    <div class="section-heading">
+        <div>
+
+            <h2>经营概览</h2>
+            <p id="overviewSubtitle">该月份经营数据</p>
+
+        </div>
+    </div>
+
+
+    <!-- ==============================
+         收入
+         ============================== -->
+
+    <div class="overview-group">
+
+        <div class="overview-group-title">
+            收入
+        </div>
+
+        <div class="overview-grid">
+
+            <div class="metric-card primary">
+
+                <div class="metric-label">
+                    总营业额
+                </div>
+
+                <div id="totalRevenue" class="metric-value">
+                    ¥0
+                </div>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <div class="metric-label">
+                    总优惠减免
+                </div>
+
+                <div id="totalDiscount" class="metric-value">
+                    ¥0
+                </div>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <div class="metric-label">
+                    营业收入
+                </div>
+
+                <div id="revenue" class="metric-value">
+                    ¥0
+                </div>
+
+            </div>
+
+
+            <div class="metric-card">
+
+                <div class="metric-label">
+                    总手续费
+                </div>
+
+                <div id="totalFee" class="metric-value">
+                    ¥0
+                </div>
+
+            </div>
+
+
+            <div
+    class="metric-card highlight clickable"
+    id="operatingIncomeCard">
+
+    <div class="metric-label">
+        经营实收
+    </div>
+
+    <div
+        id="operatingIncome"
+        class="metric-value">
+        ¥0
+    </div>
+
+    <div class="metric-arrow">
+        ›
+    </div>
+
+</div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==============================
+     货佬款项
+     点击查看供应商详情
+     ============================== -->
+    <div class="overview-group supplier-clickable" id="supplierPaymentSection">
+
+        <div class="overview-group-title">
+            货佬款项
+            <span class="supplier-detail-hint">
+                点击查看详情 ›
+            </span>
+        </div>
+
+        <div class="overview-grid">
+
+            <div class="metric-card">
+                <div class="metric-label">
+                    食材货款
+                </div>
+
+                <div id="foodPayment" class="metric-value">
+                    ¥0
+                </div>
+            </div>
+
+
+            <div class="metric-card">
+                <div class="metric-label">
+                    非食材货款
+                </div>
+
+                <div id="nonFoodPayment" class="metric-value">
+                    ¥0
+                </div>
+            </div>
+
+
+            <div class="metric-card highlight">
+                <div class="metric-label">
+                    货佬款项合计
+                </div>
+
+                <div id="supplierPayment" class="metric-value">
+                    ¥0
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==============================
+         支出
+         ============================== -->
+
+    <div class="overview-group">
+
+    <div class="overview-group-title">
+        支出
+    </div>
+
+    <div class="overview-grid">
+
+        <!-- 店铺租金 -->
+        <div
+            class="metric-card clickable"
+            id="rentCard">
+
+            <div class="metric-label">
+                店铺租金
+            </div>
+
+            <div
+                id="rent"
+                class="metric-value">
+                ¥0
+            </div>
+
+            <div class="metric-arrow">
+                ›
+            </div>
+
+        </div>
+
+
+        <!-- 物业服务费 -->
+        <div class="metric-card">
+
+            <div class="metric-label">
+                物业服务费
+            </div>
+
+            <div
+                id="propertyFee"
+                class="metric-value">
+                ¥0
+            </div>
+
+        </div>
+
+
+        <!-- 店铺水电费 -->
+        <div
+            class="metric-card clickable"
+            id="waterElectricityCard">
+
+            <div class="metric-label">
+                店铺水电费
+            </div>
+
+            <div
+                id="waterElectricity"
+                class="metric-value">
+                ¥0
+            </div>
+
+            <div class="metric-arrow">
+                ›
+            </div>
+
+        </div>
+
+
+        <!-- 宿舍房租 -->
+        <div
+            class="metric-card clickable"
+            id="dormitoryRentCard">
+
+            <div class="metric-label">
+                宿舍房租
+            </div>
+
+            <div
+                id="dormitoryRent"
+                class="metric-value">
+                ¥0
+            </div>
+
+            <div class="metric-arrow">
+                ›
+            </div>
+
+        </div>
+
+
+        <!-- 员工工资 -->
+        <div
+            class="metric-card clickable"
+            id="salaryCard">
+
+            <div class="metric-label">
+                员工工资
+            </div>
+
+            <div
+                id="salary"
+                class="metric-value">
+                ¥0
+            </div>
+
+            <div class="metric-arrow">
+                ›
+            </div>
+
+        </div>
+
+
+        <!-- 员工社保 -->
+        <div
+            class="metric-card clickable"
+            id="socialSecurityCard">
+
+            <div class="metric-label">
+                员工社保
+            </div>
+
+            <div
+                id="socialSecurity"
+                class="metric-value">
+                ¥0
+            </div>
+
+            <div class="metric-arrow">
+                ›
+            </div>
+
+        </div>
+
+
+        <!-- 非食材耗材 -->
+        <div
+            class="metric-card supplier-clickable"
+            id="consumableExpenseSection">
+
+            <div class="metric-label">
+                非食材耗材
+                <span class="supplier-detail-hint">
+                    查看详情 ›
+                </span>
+            </div>
+
+            <div
+                id="consumableExpense"
+                class="metric-value">
+                ¥0
+            </div>
+
+        </div>
+
+
+        <!-- 总公司运营支出 -->
+        <div
+            class="metric-card clickable"
+            id="hqExpenseCard">
+
+            <div class="metric-label">
+                总公司运营支出
+            </div>
+
+            <div
+                id="hqExpense"
+                class="metric-value">
+                ¥0
+            </div>
+
+            <div class="metric-arrow">
+                ›
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==============================
+     毛利
+     ============================== -->
+<div
+    class="overview-group clickable"
+    id="grossProfitSection">
+
+    <div class="overview-group-title">
+        毛利
+        <span class="supplier-detail-hint">
+            查看趋势 ›
+        </span>
+    </div>
+
+    <div class="profit-card">
+
+        <div>
+
+            <div class="profit-label">
+                毛利
+            </div>
+
+            <div
+                id="grossProfit"
+                class="profit-value">
+                ¥0
+            </div>
+
+        </div>
+
+
+        <div class="profit-rate">
+
+            <span>毛利率</span>
+
+            <strong id="grossMargin">
+                0.00%
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==============================
+     净利
+     ============================== -->
+<div
+    class="overview-group profit-group clickable"
+    id="netProfitSection">
+
+    <div class="overview-group-title">
+        净利
+        <span class="supplier-detail-hint">
+            查看趋势 ›
+        </span>
+    </div>
+
+    <div class="profit-card">
+
+        <div>
+
+            <div class="profit-label">
+                净利润
+            </div>
+
+            <div
+                id="netProfit"
+                class="profit-value">
+                ¥0
+            </div>
+
+        </div>
+
+
+        <div class="profit-rate">
+
+            <span>净利率</span>
+
+            <strong id="netMargin">
+                0.00%
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+</section>
+
+
+<!-- ==============================
+     经营收入构成
+     ============================== -->
+
+<section class="card chart-card">
+
+    <div class="card-title">
+
+        <div>
+
+            <h2>经营收入构成</h2>
+
+            <p id="compositionSubtitle">
+                该月份数据
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div id="composition" class="chart pie-chart">
+    </div>
+
+</section>

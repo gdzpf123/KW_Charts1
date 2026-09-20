@@ -1,0 +1,71 @@
+/* =========================================================
+   responsive.css
+   响应式适配：所有 @media 媒体查询集中在此
+   注意：本文件需在其它组件样式之后引入，确保覆盖生效
+   ========================================================= */
+
+
+/* =========================================================
+   小屏幕适配（<= 360px）
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+    .content {
+        padding: 0 11px;
+    }
+
+    .topbar {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .metric-card {
+        padding: 13px;
+    }
+
+    .metric-value {
+        font-size: 17px;
+    }
+
+    .metric-card.primary .metric-value {
+        font-size: 26px;
+    }
+
+    .profit-value {
+        font-size: 27px;
+    }
+
+    .profit-rate strong {
+        font-size: 19px;
+    }
+
+}
+
+
+/* =========================================================
+   平板 / 大屏（>= 600px）
+   ========================================================= */
+
+@media (min-width: 600px) {
+
+    .content {
+        padding:
+            0
+            18px;
+    }
+
+    .topbar {
+        padding-left: 22px;
+        padding-right: 22px;
+    }
+
+    .chart {
+        height: 290px;
+    }
+
+    .pie-chart {
+        height: 330px;
+    }
+
+}
