@@ -1087,21 +1087,53 @@ function renderTrend() {
 
 
     /**
-     * 2026-09-20：
-     * Y 轴最大值改为「已显示月份最高值向上十位去整」。
-     * 例：4 月净利率 35% → max = 40%
-     * 例：所有月份最高 30% → max = 30%
-     * 例：所有月份最高 31% → max = 40%
+     * 2026-09-20：Y 轴范围重定：
      *
-     * 这样 16% 与 35% 的对比从"几乎平"变成"清晰起伏"。
+     * 同时考虑当前值 / 去年同月 / 均值，
+     * 这样 YoY / 均值线不会被截顶，负净利率也能落到 0 基线之下。
      *
-     * YoY 同期数据不在 max 计算里——
-     * 保持当前值的视觉权重，YoY 若更高会被自然截顶。
+     * max：所有点的最大值向上十位去整（最小兜底 10）
+     *  - 例：当前 35 / 去年 30 / 均值 25 → max = 40
+     *  - 例：当前 30 → max = 30
+     *  - 例：当前 31 → max = 40
+     *  - 例：全 0 / 空 → max = 10
+     *
+     * min：所有点的最小值向下十位取整（只有出现负数才下沉）
+     *  - 例：最小 -2.84 → min = -10（向下十位）
+     *  - 例：最小 -15.5 → min = -20
+     *  - 例：最小 0 → min = 0（保持原样，不下沉）
+     *
+     * 这样 16% 与 35% 的对比从"几乎平"变成"清晰起伏"，
+     * 也不会再把 -2.84% 截掉看不到。
      */
 
+    const allRangeValues = [
+        ...values
+    ];
+
+    if (a2ShowYoY) {
+        yoyData.forEach(v => {
+            if (
+                v !== null &&
+                v !== undefined
+            ) {
+                allRangeValues.push(v);
+            }
+        });
+    }
+
+    if (a2ShowAvg) {
+        allRangeValues.push(avg);
+    }
+
     const trendMaxValue =
-        values.length > 0
-            ? Math.max(...values)
+        allRangeValues.length > 0
+            ? Math.max(...allRangeValues)
+            : 10;
+
+    const trendMinValue =
+        allRangeValues.length > 0
+            ? Math.min(...allRangeValues)
             : 0;
 
     const yMax =
@@ -1111,6 +1143,13 @@ function renderTrend() {
                 10
             ) / 10
         ) * 10;
+
+    const yMin =
+        trendMinValue < 0
+            ? Math.floor(
+                trendMinValue / 10
+            ) * 10
+            : 0;
 
 
     chart.setOption({
@@ -1236,7 +1275,7 @@ function renderTrend() {
 
                     type: "value",
 
-                    min: 0,
+                    min: yMin,
 
                     max: yMax,
 
