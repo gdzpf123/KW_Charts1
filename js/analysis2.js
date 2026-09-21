@@ -43,6 +43,107 @@ let a2SelectedMonth = "";
 
 /**
  * ==============================
+ * 瀑布图 · 移动端适配
+ * ==============================
+ * 思路：宽屏（≥600px）保持原样；
+ * 中屏（360-600px）旋转 30° + 缩短标签 + 加大底部；
+ * 窄屏（<360px）旋转 45° + hideOverlap 兜底。
+ *
+ * 三个常量供 renderWaterfall / 响应式 resize 共享。
+ */
+
+/**
+ * 节点 label → 移动端简称
+ * 用于窄屏减少 X 轴文字密度。
+ */
+
+const A2_WATERFALL_LABEL_SHORT = {
+
+    "营业收入": "营收",
+    "- 货佬款项": "- 货佬",
+    "- 员工工资": "- 工资",
+    "- 员工社保": "- 社保",
+    "- 宿舍房租": "- 宿舍租",
+    "- 宿舍水电费": "- 宿舍水电",
+    "- 店铺水电费": "- 店水电",
+    "- 店铺租金": "- 店租",
+    "- 总手续费": "- 手续费",
+    "- 总公司运营支出": "- 运营",
+    "- 耗材支出": "- 耗材",
+    "净利润": "净利"
+
+};
+
+
+/**
+ * 根据当前视口宽度，返回瀑布图的布局预设。
+ * @returns {{bucket: string, fontSize: number, rotate: number,
+ *           bottom: number, hideOverlap: boolean, labelMode: string}}
+ *   labelMode: 'full' 保留原 label；'short' 用 A2_WATERFALL_LABEL_SHORT 映射。
+ */
+
+function a2WaterfallLayout() {
+
+    const w =
+        window.innerWidth;
+
+
+    if (w >= 600) {
+
+        return {
+
+            bucket: "wide",
+            fontSize: 10,
+            rotate: 0,
+            bottom: 30,
+            hideOverlap: false,
+            labelMode: "full"
+
+        };
+
+    }
+
+
+    if (w >= 360) {
+
+        return {
+
+            bucket: "mid",
+            fontSize: 9,
+            rotate: 30,
+            bottom: 60,
+            hideOverlap: false,
+            labelMode: "short"
+
+        };
+
+    }
+
+
+    return {
+
+        bucket: "narrow",
+        fontSize: 9,
+        rotate: 45,
+        bottom: 80,
+        hideOverlap: true,
+        labelMode: "short"
+
+    };
+
+}
+
+
+/**
+ * 当前瀑布图所在断点 bucket。
+ * resize 跨断点时用于触发重渲染；同一 bucket 内只走 .resize()。
+ */
+
+let a2WaterfallBucket = "";
+
+
+/**
+ * ==============================
  * 页面入口
  * ==============================
  */
@@ -459,17 +560,27 @@ function a2SplitCost(record) {
             ),
 
         labor:
-            Number(record.salary || 0) +
-            Number(record.socialSecurity || 0),
+            getFixedItem(record, "salary") +
+            getFixedItem(
+                record,
+                "socialSecurity"
+            ),
 
         rent:
-            Number(record.rent || 0) +
-            Number(record.propertyFee || 0) +
-            Number(record.dormitoryRent || 0),
+            getFixedItem(record, "rent") +
+            getFixedItem(
+                record,
+                "propertyFee"
+            ) +
+            getFixedItem(
+                record,
+                "dormitoryRent"
+            ),
 
         utility:
-            Number(
-                record.waterElectricity || 0
+            getFixedItem(
+                record,
+                "waterElectricity"
             ),
 
         marketing:
@@ -496,9 +607,22 @@ function a2SplitCost(record) {
  * a2SplitCost()   把科目合并成 6 大类（食材/人力/房租…）
  *                 供瀑布图做粗颗粒的利润扣减链路。
  *
- * a2CostItems()   按 TXT 原始科目逐项拆分，共 9 项，
- *                 供成本结构的「堆叠柱状图 + 饼图」使用，
+ * a2CostItems()   供成本结构的「堆叠柱状图 + 饼图」使用，
  *                 让股东能直接看到每一笔支出花在哪。
+ *
+ * ---------------------------------------------------------
+ * 双口径（2026-09-21）
+ * ---------------------------------------------------------
+ *
+ * 新口径：TXT 中新增的「X月 成本数据」段
+ *         货佬款项 + 固定支出 9 项明细
+ *         + 其他耗材支出 + 总公司运营支出，共 12 项。
+ *
+ * 旧口径：TXT 原始科目 9 项（无「成本数据」段时回退）。
+ *
+ * 判断依据：所选月份是否全部带 record.costStructure。
+ * 同一家门店的各月 TXT 结构一致，因此柱状图
+ * 不会出现「一半新口径、一半旧口径」的错位。
  *
  * 每项字段：
  *
@@ -506,17 +630,182 @@ function a2SplitCost(record) {
  *   label  显示名称
  *   color  图表颜色
  *   get    从 record 中取当月值的函数
+ *   short  可选，饼图外置标签用的短名（长科目在手机端避免溢出）
  *
  * 说明：
  *
- * 「宿舍水电费」这一项目前 TXT 数据源中还没有，
- * 取值恒为 0，渲染时会被自动跳过；
- * 等数据源补充后无需改代码即会自动出现。
+ * 「物业服务费」「停车费」「绩效奖金」当前为 0，
+ * 渲染时会被 a2ActiveCostItems() 自动跳过；
+ * 等数据源出现非 0 值后无需改代码即会自动显示。
  *
  * =========================================================
  */
 
-function a2CostItems() {
+function a2CostItems(records) {
+
+    /**
+     * 口径判断：所选月份是否全部带「成本数据」段
+     */
+
+    const useCostStructure =
+        Array.isArray(records)
+        && records.length > 0
+        && records.every(
+            r =>
+                r
+                && r.costStructure
+        );
+
+
+    if (useCostStructure) {
+
+        return [
+
+            {
+                key: "supplierPayment",
+                label: "货佬款项",
+                color: "#dc2626",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .supplierPayment || 0
+                    )
+            },
+
+            {
+                key: "rent",
+                label: "店铺租金",
+                color: "#0891b2",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed.rent || 0
+                    )
+            },
+
+            {
+                key: "propertyFee",
+                label: "物业服务费",
+                color: "#06b6d4",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed.propertyFee || 0
+                    )
+            },
+
+            {
+                key: "parking",
+                label: "停车费",
+                color: "#eab308",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed.parking || 0
+                    )
+            },
+
+            {
+                key: "waterElectricity",
+                label: "店铺水电费",
+                color: "#3478f6",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed
+                            .waterElectricity || 0
+                    )
+            },
+
+            {
+                key: "dormitoryRent",
+                label: "宿舍房租",
+                color: "#0ea5e9",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed.dormitoryRent || 0
+                    )
+            },
+
+            {
+                key: "dormitoryUtility",
+                label: "宿舍水电燃气管理费",
+                short: "宿舍水电",
+                color: "#14b8a6",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed
+                            .dormitoryUtility || 0
+                    )
+            },
+
+            {
+                key: "salary",
+                label: "员工工资",
+                color: "#7657e8",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed.salary || 0
+                    )
+            },
+
+            {
+                key: "socialSecurity",
+                label: "员工社保",
+                color: "#a855f7",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed
+                            .socialSecurity || 0
+                    )
+            },
+
+            {
+                key: "bonus",
+                label: "绩效奖金",
+                color: "#ec4899",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .fixed.bonus || 0
+                    )
+            },
+
+            {
+                key: "consumableExpense",
+                label: "其他耗材支出",
+                color: "#8a8f98",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .consumable || 0
+                    )
+            },
+
+            {
+                key: "hqExpense",
+                label: "总公司运营支出",
+                short: "总公司运营",
+                color: "#475569",
+                get: r =>
+                    Number(
+                        r.costStructure
+                            .hqExpense || 0
+                    )
+            }
+
+        ];
+
+    }
+
+
+    /**
+     * 旧口径：TXT 原始科目 9 项
+     */
 
     return [
 
@@ -599,12 +888,12 @@ function a2CostItems() {
 
 /**
  * 过滤掉在所选月份里全部为 0 的科目，
- * 避免出现空图例（如暂缺数据的「宿舍水电费」）。
+ * 避免出现空图例（如暂缺数据的「物业服务费」）。
  */
 
 function a2ActiveCostItems(records) {
 
-    return a2CostItems()
+    return a2CostItems(records)
         .filter(
             item =>
                 records.some(
@@ -1494,7 +1783,7 @@ function renderCostStack() {
 
 
     /**
-     * 按 TXT 原始科目逐项拆分（最多 9 项）
+     * 成本科目逐项拆分（见 a2CostItems() 的双口径说明）
      */
 
     const costItems =
@@ -1875,7 +2164,9 @@ function renderCostPie() {
 
 
     /**
-     * 当月各项成本（按 TXT 原始科目逐项）
+     * 当月各项成本
+     * （有「成本数据」段走新口径，否则回退旧口径，
+     *   见 a2CostItems()）
      */
     const costItems =
         a2ActiveCostItems(records);
@@ -1946,6 +2237,52 @@ function renderCostPie() {
     if (!element) {
 
         return;
+
+    }
+
+
+    /**
+     * 饼图几何自适应
+     *
+     *  - 旧口径（≤8 项）：图例单行即可放下，沿用原半径与圆心
+     *  - 新口径（9 项）：图例折两行，收一圈给外置标签留空间
+     *  - 窄屏：再收一圈，避免左右两侧标签被容器边缘裁切
+     *
+     * 容器高度由 css/analysis2.css 的 #a2CostPieChart 提供。
+     */
+
+    const pieWidth =
+        element.clientWidth
+        || element.offsetWidth
+        || 0;
+
+    const isNarrowPie =
+        pieWidth > 0
+        && pieWidth < 440;
+
+    const isDensePie =
+        costItems.length > 8;
+
+
+    let pieRadius = ["45%", "70%"];
+
+    let pieCenter = ["50%", "45%"];
+
+
+    if (isDensePie) {
+
+        pieRadius = ["42%", "66%"];
+
+        pieCenter = ["50%", "42%"];
+
+    }
+
+
+    if (isNarrowPie) {
+
+        pieRadius = ["36%", "58%"];
+
+        pieCenter = ["50%", "41%"];
 
     }
 
@@ -2029,9 +2366,17 @@ function renderCostPie() {
 
             type: "pie",
 
-            radius: ["45%", "70%"],
+            /**
+             * 新口径最多 9 项，图例在窄屏会折成两行；
+             * 圆心与半径按容器宽度自适应
+             *（窄屏收一圈避免标签被裁切），
+             * 配合 #a2CostPieChart 的加高（css/analysis2.css），
+             * 让外置标签既不被裁切、也不压住底部图例。
+             */
 
-            center: ["50%", "45%"],
+            radius: pieRadius,
+
+            center: pieCenter,
 
             avoidLabelOverlap: true,
 
@@ -2041,7 +2386,27 @@ function renderCostPie() {
 
                 position: "outside",
 
-                formatter: "{b}\n{d}%",
+                /**
+                 * 外置标签用短名（item.short），
+                 * 避免「宿舍水电燃气管理费」这类长科目
+                 * 在手机端溢出；图例与 tooltip 仍显示全名。
+                 */
+
+                formatter: p => {
+
+                    const item =
+                        costItems.find(
+                            i =>
+                                i.label === p.name
+                        );
+
+                    const shown =
+                        (item && item.short)
+                        || p.name;
+
+                    return `${shown}\n${p.percent.toFixed(1)}%`;
+
+                },
 
                 fontSize: 10,
 
@@ -2148,9 +2513,15 @@ function renderWaterfall() {
      * 修改此处时，记得同步更新 pages/analysis2.html 里
      * `.a2-waterfall-formula` 的文本。
      *
-     * 「宿舍水电费」目前在 TXT 源里没有汇总（数据源未补），
-     * 取值 0 时仍会出现在瀑布里，便于后续数据源补齐后
-     * 自动显示，无需改代码。
+     * 固定支出相关科目（员工工资 / 员工社保 / 宿舍房租 /
+     * 宿舍水电费 / 店铺水电费 / 店铺租金）统一走
+     * getFixedItem()，即优先读 TXT「固定支出数据如下」块。
+     *
+     * 【2026-09-21 修复】
+     * 此前这里直接读 latest.dormitoryUtility，
+     * 而该字段在经营简报里恒为 0 —— 真实值
+     * 「宿舍水电燃气管理费」只在固定支出块里，
+     * 导致瀑布图「宿舍水电费」一直显示 0。
      * -----------------------------------------------------
      */
 
@@ -2160,30 +2531,40 @@ function renderWaterfall() {
         );
 
     const salary =
-        Number(latest.salary || 0);
+        getFixedItem(
+            latest,
+            "salary"
+        );
 
     const socialSecurity =
-        Number(
-            latest.socialSecurity || 0
+        getFixedItem(
+            latest,
+            "socialSecurity"
         );
 
     const dormitoryRent =
-        Number(
-            latest.dormitoryRent || 0
+        getFixedItem(
+            latest,
+            "dormitoryRent"
         );
 
     const dormitoryUtility =
-        Number(
-            latest.dormitoryUtility || 0
+        getFixedItem(
+            latest,
+            "dormitoryUtility"
         );
 
     const waterElectricity =
-        Number(
-            latest.waterElectricity || 0
+        getFixedItem(
+            latest,
+            "waterElectricity"
         );
 
     const rent =
-        Number(latest.rent || 0);
+        getFixedItem(
+            latest,
+            "rent"
+        );
 
     const totalFee =
         Number(latest.totalFee || 0);
@@ -2308,6 +2689,34 @@ function renderWaterfall() {
         nodes.map(
             n => n.label
         );
+
+
+    /**
+     * 响应式布局（≥600 / 360-600 / <360 三段）
+     *
+     * displayLabels 给 ECharts X 轴显示：
+     *   宽屏用 stepLabels 原文；
+     *   小屏走 A2_WATERFALL_LABEL_SHORT 简称。
+     *
+     * tooltip 仍然读 stepLabels，保持原全名。
+     */
+
+    const layout =
+        a2WaterfallLayout();
+
+
+    a2WaterfallBucket =
+        layout.bucket;
+
+
+    const displayLabels =
+        layout.labelMode === "short"
+            ? stepLabels.map(
+                l =>
+                    A2_WATERFALL_LABEL_SHORT[l]
+                    || l
+            )
+            : stepLabels;
 
 
     /**
@@ -2452,7 +2861,7 @@ function renderWaterfall() {
 
             top: 30,
 
-            bottom: 30,
+            bottom: layout.bottom,
 
             containLabel: true
 
@@ -2506,7 +2915,7 @@ function renderWaterfall() {
 
             type: "category",
 
-            data: stepLabels,
+            data: displayLabels,
 
             axisLine: {
 
@@ -2522,7 +2931,11 @@ function renderWaterfall() {
 
                 color: "#8a8f98",
 
-                fontSize: 10,
+                fontSize: layout.fontSize,
+
+                rotate: layout.rotate,
+
+                hideOverlap: layout.hideOverlap,
 
                 interval: 0
 
@@ -3025,11 +3438,57 @@ function resizeAnalysis2Charts() {
     }
 
 
+    /**
+     * 瀑布图特殊处理：
+     * chart.resize() 只重排画布，不能改 X 轴字号 / rotate /
+     * 短标签。如果当前断点发生了变化，则销毁旧实例并
+     * 重新走 renderWaterfall()，让 a2WaterfallLayout() 重新
+     * 给出这一格的预设。
+     *
+     * 同断点内只需要 .resize()，避免无谓的销毁。
+     */
+
+    if (
+        window.charts.a2Waterfall
+        && !window.charts.a2Waterfall.isDisposed()
+    ) {
+
+        const nextBucket =
+            a2WaterfallLayout().bucket;
+
+
+        if (
+            a2WaterfallBucket
+            && nextBucket !== a2WaterfallBucket
+        ) {
+
+            window.charts.a2Waterfall.dispose();
+
+            window.charts.a2Waterfall = null;
+
+
+            if (
+                typeof renderWaterfall ===
+                "function"
+            ) {
+
+                renderWaterfall();
+
+            }
+
+        } else {
+
+            window.charts.a2Waterfall.resize();
+
+        }
+
+    }
+
+
     [
         "a2Trend",
         "a2CostStack",
-        "a2CostPie",
-        "a2Waterfall"
+        "a2CostPie"
     ].forEach(key => {
 
         if (

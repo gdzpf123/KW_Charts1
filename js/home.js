@@ -46,6 +46,16 @@ let currentMonth = "";
 
 let homeCharts = {};
 
+
+/**
+ * 营业收入构成饼图的窄屏断点状态
+ *
+ * null = 尚未渲染；true/false = 当前是否处于窄屏布局。
+ * resize 跨过 440px 时重渲染一次，让简称 / 隐藏标签生效。
+ */
+
+let compositionNarrowBucket = null;
+
 /**
 
 
@@ -519,13 +529,12 @@ function getStoreRecords(
 }
 
 /**
- *
+
  * =========================================================
- * 首页：更新月份只读标签
+ * 首页：更新月份标签
  *
- * 2026-09-20 改造：
- * 首页不再支持切换月份，仅显示当前最新月份。
- * 如需切换，请到「历史」页面点击对应月份。
+ * 2026-09-21 改造：
+ * 月份 Div 不再绑定点击事件，仅作为纯展示标签。
  * =========================================================
  */
 
@@ -541,16 +550,6 @@ function updateMonthLabel() {
     }
     label.textContent =
         monthText(currentMonth);
-
-    /**
-     * 点击月份标签跳转到「历史」页面（history 页支持切换）
-     */
-
-    label.onclick = () => {
-
-        loadPage("history");
-
-    };
 
 }
 
@@ -1020,7 +1019,18 @@ function renderSupplierPaymentTrend() {
 /**
 
 * =========================================================
-* 经营收入构成
+* 营业收入构成
+*
+* 【公式】（2026-09-21 用户提供）
+* 营业收入 = 总手续费 + 货佬款项 + 员工工资 + 员工社保
+*          + 宿舍房租 + 宿舍水电费 + 店铺水电费 + 店铺租金
+*          + 总公司运营支出 + 耗材支出 + 净利润
+*
+* 共 11 项，即「营业收入」的完整去向。
+* 其中店铺租金 / 店铺水电费 / 宿舍房租 / 宿舍水电费
+* 这四项固定支出从 TXT「固定支出数据如下」块读取 ——
+* 块里的「宿舍水电燃气管理费」在经营简报里恒为 0，
+* 只有块内才有真实值；未补该块的月份回退简报字段。
 * =========================================================
     */
 
@@ -1042,7 +1052,36 @@ function renderComposition() {
     if (!chart) {
         return;
     }
+    /**
+     * -----------------------------------------------------
+     * 固定支出明细取值
+     *
+     * 统一走 data.js 的 getFixedItem()：
+     * 优先取 TXT「成本数据」段里的「固定支出数据如下」块，
+     * 没有该块的旧月份回退经营简报字段。
+     * -----------------------------------------------------
+     */
+
+    const fromFixed =
+        (key) =>
+            getFixedItem(record, key);
+
+
+    /**
+     * 营业收入 11 项构成
+     *
+     * 净利润为负时饼图无处安放负值扇区，
+     * 这里按 0 处理（正常经营月份不会出现）。
+     */
+
     const values = [
+        {
+            name: "总手续费",
+            value:
+                Number(
+                    record.totalFee || 0
+                )
+        },
         {
             name: "货佬款项",
             value:
@@ -1051,24 +1090,49 @@ function renderComposition() {
                 )
         },
         {
-            name: "固定支出",
+            name: "员工工资",
             value:
-                Number(
-                    record.fixedExpense || 0
-                )
+                fromFixed("salary")
         },
         {
-            name: "其他支出",
+            name: "员工社保",
             value:
-                Number(
-                    record.otherExpense || 0
-                )
+                fromFixed("socialSecurity")
         },
         {
-            name: "总部运营",
+            name: "宿舍房租",
+            value:
+                fromFixed("dormitoryRent")
+        },
+        {
+            name: "宿舍水电费",
+            value:
+                fromFixed("dormitoryUtility")
+        },
+        {
+            name: "店铺水电费",
+            value:
+                fromFixed("waterElectricity")
+        },
+        {
+            name: "店铺租金",
+            value:
+                fromFixed("rent")
+        },
+        {
+            name: "总公司运营支出",
             value:
                 Number(
                     record.hqExpense || 0
+                )
+        },
+        {
+            name: "耗材支出",
+            value:
+                Number(
+                    record.consumableExpense
+                    || record.otherExpense
+                    || 0
                 )
         },
         {
@@ -1082,6 +1146,51 @@ function renderComposition() {
                 )
         }
     ];
+
+
+    /**
+     * -----------------------------------------------------
+     * 窄屏标签适配
+     *
+     * 容器 < 440px（手机）时长科目名会贴着左右边缘
+     * 被截成「总公司…」，这里改用简称；
+     * 占比 < 1.5% 的小扇区则整块不画标签。
+     * -----------------------------------------------------
+     */
+
+    const compositionEl =
+        document.getElementById(
+            "composition"
+        );
+
+    const narrow =
+        !!compositionEl
+        && compositionEl.clientWidth > 0
+        && compositionEl.clientWidth < 440;
+
+    compositionNarrowBucket =
+        narrow;
+
+    const COMPOSITION_SHORT_NAME = {
+        "总手续费": "手续费",
+        "总公司运营支出": "运营支出",
+        "店铺水电费": "店水电",
+        "店铺租金": "店租",
+        "宿舍水电费": "宿舍水电",
+        "宿舍房租": "宿舍租"
+    };
+
+    function shortCompositionName(name) {
+
+        return (
+            narrow
+                && COMPOSITION_SHORT_NAME[name]
+        )
+            || name;
+
+    }
+
+
     chart.setOption({
         animationDuration: 500,
         tooltip: {
@@ -1105,34 +1214,96 @@ function renderComposition() {
         },
         series: [{
             type: "pie",
-            radius: [
-                "42%",
-                "68%"
-            ],
-            center: [
-                "50%",
-                "45%"
-            ],
+
+            /**
+             * 11 项构成：图例多行 + 外置标签较多，
+             * 半径收一档、圆心上移，配合 #composition
+             * 的加高（css/home.css），避免标签压图例；
+             * 窄屏图例占三行，再收一档并进一步上移。
+             */
+
+            radius:
+                narrow
+                    ? ["34%", "54%"]
+                    : ["36%", "60%"],
+            center:
+                narrow
+                    ? ["50%", "37%"]
+                    : ["50%", "42%"],
             avoidLabelOverlap: true,
+
+            /**
+             * 窄屏下小扇区（宿舍水电费 0.19% 等）的外置标签
+             * 会挤在一起，交给 ECharts 自动隐藏重叠的那几个；
+             * 名称与数值在底部图例和 tooltip 里依然可查。
+             */
+
+            labelLayout: {
+                hideOverlap: true
+            },
             itemStyle: {
                 borderRadius: 5,
                 borderColor: "#fff",
                 borderWidth: 2
             },
             label: {
+
+                /**
+                 * 宽屏：全名 + 百分比（原样）。
+                 * 窄屏：长名换简称、占比不足 1.5% 的小扇区
+                 * 不画标签（名称/数值仍在图例与 tooltip 里），
+                 * 避免左右边缘截断成一堆「…」。
+                 */
+
                 formatter:
-                    "{b}\n{d}%",
+                    narrow
+                        ? (p) => {
+
+                            if (p.percent < 1.5) {
+
+                                return "";
+
+                            }
+
+                            return (
+                                shortCompositionName(p.name)
+                                + "\n"
+                                + Number(
+                                    p.percent.toFixed(2)
+                                )
+                                + "%"
+                            );
+
+                        }
+                        : "{b}\n{d}%",
                 fontSize: 10
             },
             data:
                 values
         }]
     });
+    /**
+     * 副标题带上「营业收入」合计
+     *
+     * 按公式逐项相加得出（与饼图口径完全一致），
+     * 不取 TXT「营业收入本月」——
+     * TXT 的营业收入与经营实收之间含平台调整项，
+     * 与本公式存在小额差异（如西乡店 8 月差 3116.54）。
+     */
+
+    const revenueTotal =
+        values.reduce(
+            (sum, item) =>
+                sum + item.value,
+            0
+        );
+
     const subtitle =
         $("compositionSubtitle");
     if (subtitle) {
         subtitle.textContent =
-            `${currentStore} · ${monthText(currentMonth)}`;
+            `${currentStore} · ${monthText(currentMonth)}`
+            + ` · 营业收入 ${money(revenueTotal)}`;
     }
 
 }
@@ -1145,6 +1316,33 @@ function renderComposition() {
     */
 
 function resizeHomeCharts() {
+
+    /**
+     * 窗口跨过 440px 断点时，
+     * 营业收入构成饼图需要重渲染一次决定是否用简称。
+     */
+
+    const compositionEl =
+        document.getElementById(
+            "composition"
+        );
+
+    if (compositionEl) {
+
+        const narrow =
+            compositionEl.clientWidth > 0
+            && compositionEl.clientWidth < 440;
+
+        if (
+            compositionNarrowBucket !== null
+            && narrow !== compositionNarrowBucket
+        ) {
+
+            renderComposition();
+
+        }
+
+    }
 
     Object.values(
         homeCharts
