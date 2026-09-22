@@ -116,13 +116,36 @@ function initConsumableDetailPage() {
 
 
     /**
-     * 总额
+     * =====================================================
+     * 合计金额
+     * =====================================================
+     *
+     * 取账面值 record.consumableExpense
+     * （= TXT「非食材 耗材 支出本月」），
+     * 与首页 / 月结详情页顶部的「非食材耗材」卡片完全一致。
+     *
+     * 【为什么不累加列表】
+     *
+     * 明细列表本身是**不完整**的：
+     * 全量核对 5 店 × 8 月共 40 个文件，35 个文件的
+     * 列表求和都小于账面值（少 25 ~ 696 元，最大差
+     * 出现在西乡店 2026-03，差 696.28）。
+     * 若按列表求和展示，详情页合计会比首页少一截，
+     * 看起来像是数据出错，实际是列表缺失。
+     *
+     * 列表仍照常逐条展示，只作为明细参考。
+     * 这里与 supplier_detail.js 的
+     * foodTotal / nonFoodTotal 取值方式保持一致 ——
+     * 同样取账面小计，而非累加列表。
+     *
+     * otherExpense 是历史字段（data.js 里与
+     * consumableExpense 同源），仅作降级兜底。
      */
     const total =
-        details.reduce(
-            (sum, item) =>
-                sum + Number(item.amount || 0),
-            0
+        Number(
+            record.consumableExpense
+            || record.otherExpense
+            || 0
         );
 
 

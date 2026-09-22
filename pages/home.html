@@ -3,7 +3,6 @@
      ============================== -->
 <div id="pageHeader"
      data-title="门店经营数据"
-     data-subtitle="当月经营数据 / 历史趋势 / 收支分析"
      data-show-back="false">
 </div>
 
@@ -487,7 +486,7 @@
 
 
 <!-- ==============================
-     营业收入构成
+     经营实收构成（点击扇区可下钻）
      ============================== -->
 
 <section class="card chart-card">
@@ -496,13 +495,17 @@
 
         <div>
 
-            <h2>营业收入构成</h2>
+            <h2>经营实收构成</h2>
 
             <p id="compositionSubtitle">
                 当前门店当月数据
             </p>
 
         </div>
+
+        <button id="compositionBack" class="drill-back" type="button" hidden>
+            ← 返回
+        </button>
 
     </div>
 

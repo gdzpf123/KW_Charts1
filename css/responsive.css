@@ -68,4 +68,20 @@
         height: 330px;
     }
 
+    /**
+     * 经营实收构成的「返回」按钮：
+     * 基础样式是 44px 的移动端触控尺寸，
+     * 桌面用鼠标点，收成紧凑胶囊即可。
+     */
+
+    .drill-back {
+        min-height: 32px;
+
+        padding:
+            0
+            14px;
+
+        font-size: 12px;
+    }
+
 }

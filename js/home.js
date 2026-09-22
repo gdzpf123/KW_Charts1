@@ -48,13 +48,25 @@ let homeCharts = {};
 
 
 /**
- * 营业收入构成饼图的窄屏断点状态
+ * 经营实收构成饼图的窄屏断点状态
  *
  * null = 尚未渲染；true/false = 当前是否处于窄屏布局。
  * resize 跨过 440px 时重渲染一次，让简称 / 隐藏标签生效。
  */
 
 let compositionNarrowBucket = null;
+
+/**
+ * 经营实收构成的下钻状态
+ *
+ * compositionDrill = 当前下钻到的大类名（null = 一级总览）。
+ * compositionDrillKey = 该状态对应的「门店/月份」，
+ * 换门店或换月份时据此复位，避免停在上个月的子类里。
+ */
+
+let compositionDrill = null;
+
+let compositionDrillKey = "";
 
 /**
 
@@ -1017,107 +1029,121 @@ function renderSupplierPaymentTrend() {
 }
 
 /**
-
+ 
 * =========================================================
-* 营业收入构成
+* 经营实收构成（两级下钻环形图）
 *
-* 【公式】（2026-09-21 用户提供）
-* 营业收入 = 总手续费 + 货佬款项 + 员工工资 + 员工社保
-*          + 宿舍房租 + 宿舍水电费 + 店铺水电费 + 店铺租金
+* 【公式】（2026-09-22 用户分类版）
+* 经营实收 = 货佬款项
+*          + 店铺固定支出（店铺租金 + 店铺水电费
+*                        + 物业服务费 + 停车费）
+*          + 员工固定支出（宿舍房租 + 宿舍水电费
+*                        + 员工工资 + 员工社保 + 绩效奖金）
 *          + 总公司运营支出 + 耗材支出 + 净利润
 *
-* 共 11 项，即「营业收入」的完整去向。
-* 其中店铺租金 / 店铺水电费 / 宿舍房租 / 宿舍水电费
-* 这四项固定支出从 TXT「固定支出数据如下」块读取 ——
-* 块里的「宿舍水电燃气管理费」在经营简报里恒为 0，
-* 只有块内才有真实值；未补该块的月份回退简报字段。
+* 一级只画 6 个大类（13 项明细归到两大固定支出里），
+* 扇区从 13 个降到 6 个，标签不再互相挤压；
+* 点击「店铺固定支出」/「员工固定支出」扇区下钻看明细，
+* 卡片标题右侧的「返回」按钮回到一级。
+*
+* 13 项明细之和 = TXT「经营实收」，全量 40 个文件对齐
+* （西乡店 8 月：675011.62 总成本 + 68063.92 净利润
+*   = 743075.54 ≈ 743075.56 经营实收），不含平台调整项。
+*
+* 其中 9 项固定支出（店铺租金 / 店铺水电费 / 物业服务费 /
+* 停车费 / 宿舍房租 / 宿舍水电费 / 员工工资 / 员工社保 /
+* 绩效奖金）统一走 data.js 的 getFixedItem()，从 TXT
+* 「固定支出数据如下」块读取 —— 块里的「宿舍水电燃气管理费」
+* 在经营简报里恒为 0，只有块内才有真实值。
 * =========================================================
     */
 
-function renderComposition() {
+/**
+* =========================================================
+* 经营实收构成的分类定义
+*
+* 顺序与用户给的公式完全一致。
+* 带 items 的大类支持下钻，value 由子项累加得出。
+* =========================================================
+    */
 
-    const record =
-        getRecord(
-            currentStore,
-            currentMonth
-        );
+function compositionGroups(record) {
+
     if (!record) {
-        return;
+
+        return [];
+
     }
-    const chart =
-        initHomeChart(
-            "composition",
-            "composition"
-        );
-    if (!chart) {
-        return;
-    }
-    /**
-     * -----------------------------------------------------
-     * 固定支出明细取值
-     *
-     * 统一走 data.js 的 getFixedItem()：
-     * 优先取 TXT「成本数据」段里的「固定支出数据如下」块，
-     * 没有该块的旧月份回退经营简报字段。
-     * -----------------------------------------------------
-     */
+
 
     const fromFixed =
         (key) =>
             getFixedItem(record, key);
 
 
-    /**
-     * 营业收入 11 项构成
-     *
-     * 净利润为负时饼图无处安放负值扇区，
-     * 这里按 0 处理（正常经营月份不会出现）。
-     */
-
-    const values = [
-        {
-            name: "总手续费",
-            value:
-                Number(
-                    record.totalFee || 0
-                )
-        },
+    return [
         {
             name: "货佬款项",
             value:
                 Number(
-                    record.supplierPayment || 0
+                    record.supplierPayment
+                    || 0
                 )
         },
         {
-            name: "员工工资",
-            value:
-                fromFixed("salary")
+            name: "店铺固定支出",
+            items: [
+                {
+                    name: "店铺租金",
+                    value:
+                        fromFixed("rent")
+                },
+                {
+                    name: "店铺水电费",
+                    value:
+                        fromFixed("waterElectricity")
+                },
+                {
+                    name: "物业服务费",
+                    value:
+                        fromFixed("propertyFee")
+                },
+                {
+                    name: "停车费",
+                    value:
+                        fromFixed("parking")
+                }
+            ]
         },
         {
-            name: "员工社保",
-            value:
-                fromFixed("socialSecurity")
-        },
-        {
-            name: "宿舍房租",
-            value:
-                fromFixed("dormitoryRent")
-        },
-        {
-            name: "宿舍水电费",
-            value:
-                fromFixed("dormitoryUtility")
-        },
-        {
-            name: "店铺水电费",
-            value:
-                fromFixed("waterElectricity")
-        },
-        {
-            name: "店铺租金",
-            value:
-                fromFixed("rent")
+            name: "员工固定支出",
+            items: [
+                {
+                    name: "宿舍房租",
+                    value:
+                        fromFixed("dormitoryRent")
+                },
+                {
+                    name: "宿舍水电费",
+                    value:
+                        fromFixed("dormitoryUtility")
+                },
+                {
+                    name: "员工工资",
+                    value:
+                        fromFixed("salary")
+                },
+                {
+                    name: "员工社保",
+                    value:
+                        fromFixed("socialSecurity")
+                },
+                {
+                    name: "绩效奖金",
+                    value:
+                        fromFixed("bonus")
+                }
+            ]
         },
         {
             name: "总公司运营支出",
@@ -1145,7 +1171,56 @@ function renderComposition() {
                     0
                 )
         }
-    ];
+    ]
+        .map(
+            group => {
+
+                if (!group.items) {
+
+                    return group;
+
+                }
+
+                return {
+                    name: group.name,
+                    items: group.items,
+                    value:
+                        group.items.reduce(
+                            (sum, item) =>
+                                sum + item.value,
+                            0
+                        )
+                };
+
+            }
+        );
+
+}
+
+
+function renderComposition() {
+
+    const record =
+        getRecord(
+            currentStore,
+            currentMonth
+        );
+    if (!record) {
+        return;
+    }
+    const chart =
+        initHomeChart(
+            "composition",
+            "composition"
+        );
+    if (!chart) {
+        return;
+    }
+
+    const compositionEl =
+        document.getElementById(
+            "composition"
+        );
 
 
     /**
@@ -1158,11 +1233,6 @@ function renderComposition() {
      * -----------------------------------------------------
      */
 
-    const compositionEl =
-        document.getElementById(
-            "composition"
-        );
-
     const narrow =
         !!compositionEl
         && compositionEl.clientWidth > 0
@@ -1171,13 +1241,77 @@ function renderComposition() {
     compositionNarrowBucket =
         narrow;
 
+
+    /**
+     * -----------------------------------------------------
+     * 下钻状态
+     *
+     * 换门店 / 换月份时复位，避免停在上一个月份
+     * 的子类里；跨 440px 断点重渲染时保留层级。
+     * -----------------------------------------------------
+     */
+
+    const drillKey =
+        `${currentStore}/${currentMonth}`;
+
+    if (compositionDrillKey !== drillKey) {
+
+        compositionDrillKey =
+            drillKey;
+        compositionDrill = null;
+
+    }
+
+
+    const groups =
+        compositionGroups(record);
+
+    const activeGroup =
+        compositionDrill
+            ? groups.find(
+                group =>
+                    group.name === compositionDrill
+                    && group.items
+            ) || null
+            : null;
+
+    const drilled =
+        !!activeGroup;
+
+
+    /**
+     * 一级：6 个大类；二级：该大类下的明细子项。
+     */
+
+    const pieData =
+        drilled
+            ? activeGroup.items.map(
+                item => ({
+                    name: item.name,
+                    value: item.value
+                })
+            )
+            : groups.map(
+                group => ({
+                    name: group.name,
+                    value: group.value
+                })
+            );
+
+
     const COMPOSITION_SHORT_NAME = {
-        "总手续费": "手续费",
+        "货佬款项": "货佬",
+        "店铺固定支出": "店铺固定",
+        "员工固定支出": "员工固定",
         "总公司运营支出": "运营支出",
         "店铺水电费": "店水电",
         "店铺租金": "店租",
+        "物业服务费": "物业费",
+        "停车费": "停车费",
         "宿舍水电费": "宿舍水电",
-        "宿舍房租": "宿舍租"
+        "宿舍房租": "宿舍租",
+        "绩效奖金": "绩效",
+        "耗材支出": "耗材"
     };
 
     function shortCompositionName(name) {
@@ -1191,8 +1325,102 @@ function renderComposition() {
     }
 
 
+    /**
+     * 经营实收合计
+     *
+     * 按公式逐项带符号相加（净利润为负时照减）。
+     * 该合计 = TXT「经营实收」：西乡店 8 月
+     * 743075.55 vs 743075.56，全量 40 个文件
+     * 全部对齐（±0.02 元四舍五入）。
+     *
+     * 注意：净利润为负的月份（西乡店 2026-04，
+     * -17021.23）饼图放不下负值扇区，该扇区只能按 0 画，
+     * 所以图上少一块、合计仍按负数扣减并额外标注说明。
+     */
+
+    const rawNetProfit =
+        Number(
+            record.netProfit || 0
+        );
+
+    const revenueTotal =
+        groups.reduce(
+            (sum, group) =>
+                sum + group.value,
+            0
+        )
+        + (
+            rawNetProfit < 0
+                ? rawNetProfit
+                : 0
+        );
+
+
+    /**
+     * 圆心文字
+     *
+     * 一级显示「经营实收」合计，二级显示当前大类
+     * 名称与金额，让下钻层级一眼可见。
+     * 用像素换算圆心位置：圆心的 center 是百分比，
+     * graphic 的 top 需要像素，故按容器高度折算。
+     */
+
+    const centerY =
+        (
+            compositionEl
+            && compositionEl.clientHeight
+            || 360
+        )
+        * (
+            narrow
+                ? 0.40
+                : 0.44
+        );
+
+    const centerTitle =
+        drilled
+            ? shortCompositionName(
+                activeGroup.name
+            )
+            : "经营实收";
+
+    const centerValue =
+        money(
+            drilled
+                ? activeGroup.value
+                : revenueTotal
+        );
+
+
     chart.setOption({
         animationDuration: 500,
+        graphic: [
+            {
+                type: "text",
+                left: "center",
+                top: centerY - 18,
+                silent: true,
+                style: {
+                    text: centerTitle,
+                    textAlign: "center",
+                    fill: "#8a8a8a",
+                    fontSize: 11
+                }
+            },
+            {
+                type: "text",
+                left: "center",
+                top: centerY - 3,
+                silent: true,
+                style: {
+                    text: centerValue,
+                    textAlign: "center",
+                    fill: "#333333",
+                    fontSize: 13,
+                    fontWeight: "bold"
+                }
+            }
+        ],
         tooltip: {
             trigger: "item",
             formatter:
@@ -1204,8 +1432,23 @@ function renderComposition() {
                     `（${p.percent}%）`
         },
         legend: {
-            bottom: 5,
+            bottom: 2,
             left: "center",
+
+            /**
+             * 一级 6 项、二级最多 5 项，图例都只占一行；
+             * 窄屏仍换简称，防止长名把图例挤成两行。
+             */
+
+            formatter:
+                narrow
+                    ? name =>
+                        shortCompositionName(name)
+                    : undefined,
+            itemWidth: 10,
+            itemHeight: 10,
+            itemGap:
+                narrow ? 8 : 10,
             textStyle: {
                 color:
                     "#666",
@@ -1216,24 +1459,22 @@ function renderComposition() {
             type: "pie",
 
             /**
-             * 11 项构成：图例多行 + 外置标签较多，
-             * 半径收一档、圆心上移，配合 #composition
-             * 的加高（css/home.css），避免标签压图例；
-             * 窄屏图例占三行，再收一档并进一步上移。
+             * 分类后扇区变少，半径可以放大一档，
+             * 圆心略微下移，留出外置标签的空间。
              */
 
             radius:
                 narrow
-                    ? ["34%", "54%"]
-                    : ["36%", "60%"],
+                    ? ["32%", "54%"]
+                    : ["36%", "58%"],
             center:
                 narrow
-                    ? ["50%", "37%"]
-                    : ["50%", "42%"],
+                    ? ["50%", "40%"]
+                    : ["50%", "44%"],
             avoidLabelOverlap: true,
 
             /**
-             * 窄屏下小扇区（宿舍水电费 0.19% 等）的外置标签
+             * 窄屏下小扇区（宿舍水电费 1.4% 等）的外置标签
              * 会挤在一起，交给 ECharts 自动隐藏重叠的那几个；
              * 名称与数值在底部图例和 tooltip 里依然可查。
              */
@@ -1249,61 +1490,167 @@ function renderComposition() {
             label: {
 
                 /**
-                 * 宽屏：全名 + 百分比（原样）。
+                 * 宽屏：全名 + 百分比。
                  * 窄屏：长名换简称、占比不足 1.5% 的小扇区
                  * 不画标签（名称/数值仍在图例与 tooltip 里），
                  * 避免左右边缘截断成一堆「…」。
+                 *
+                 * 两种宽度都先过滤掉 0 值科目：物业服务费 /
+                 * 停车费 / 绩效奖金 目前多为 0，没有扇区却会
+                 * 在圆心下方叠出一排「0%」标签压住图例。
                  */
 
-                formatter:
-                    narrow
-                        ? (p) => {
+                formatter: (p) => {
 
-                            if (p.percent < 1.5) {
+                    if (!p.value) {
 
-                                return "";
+                        return "";
 
-                            }
+                    }
 
-                            return (
-                                shortCompositionName(p.name)
-                                + "\n"
-                                + Number(
-                                    p.percent.toFixed(2)
-                                )
-                                + "%"
-                            );
+                    if (narrow) {
+
+                        if (p.percent < 1.5) {
+
+                            return "";
 
                         }
-                        : "{b}\n{d}%",
-                fontSize: 10
+
+                        return (
+                            shortCompositionName(p.name)
+                            + "\n"
+                            + Number(
+                                p.percent.toFixed(2)
+                            )
+                            + "%"
+                        );
+
+                    }
+
+                    return (
+                        p.name
+                        + "\n"
+                        + Number(
+                            p.percent.toFixed(2)
+                        )
+                        + "%"
+                    );
+
+                },
+                fontSize: 10,
+
+                /**
+                 * 关掉 ECharts 的标签截断：手机端左侧的
+                 * 「员工固定 28.7%」原本会被压成「员工…」，
+                 * 关掉后按实际宽度铺开（容器外还有卡片留白）。
+                 */
+
+                overflow: "none"
             },
             data:
-                values
+                pieData
         }]
     });
+
+
     /**
-     * 副标题带上「营业收入」合计
+     * 下钻交互
      *
-     * 按公式逐项相加得出（与饼图口径完全一致），
-     * 不取 TXT「营业收入本月」——
-     * TXT 的营业收入与经营实收之间含平台调整项，
-     * 与本公式存在小额差异（如西乡店 8 月差 3116.54）。
+     * 点击带子项的大类扇区进入二级；先 off 再 on，
+     * 避免每次重渲染都往同一个实例上叠监听。
      */
 
-    const revenueTotal =
-        values.reduce(
-            (sum, item) =>
-                sum + item.value,
-            0
+    chart.off("click");
+
+    chart.on(
+        "click",
+        params => {
+
+            const group =
+                groups.find(
+                    item =>
+                        item.name === params.name
+                        && item.items
+                );
+
+            if (!group) {
+
+                return;
+
+            }
+
+            compositionDrill =
+                group.name;
+
+            renderComposition();
+
+        }
+    );
+
+    const backBtn =
+        document.getElementById(
+            "compositionBack"
         );
+
+    if (backBtn) {
+
+        backBtn.hidden = !drilled;
+
+        backBtn.onclick = () => {
+
+            compositionDrill = null;
+            renderComposition();
+
+        };
+
+    }
+
+
+    /**
+     * 副标题
+     *
+     * 一级：门店 · 月份 · 经营实收合计；
+     * 二级：门店 · 月份 · 大类金额（占经营实收比例）。
+     */
 
     const subtitle =
         $("compositionSubtitle");
+
     if (subtitle) {
-        subtitle.textContent =
-            `${currentStore} · ${monthText(currentMonth)}`
-            + ` · 营业收入 ${money(revenueTotal)}`;
+
+        const head =
+            `${currentStore} · ${monthText(currentMonth)}`;
+
+        if (drilled) {
+
+            const share =
+                revenueTotal
+                    ? (
+                        activeGroup.value
+                        / revenueTotal
+                        * 100
+                    ).toFixed(2)
+                    : "0.00";
+
+            subtitle.textContent =
+                `${head} · ${activeGroup.name} `
+                + `${money(activeGroup.value)}`
+                + `（占经营实收 ${share}%）`;
+
+        }
+        else {
+
+            subtitle.textContent =
+                `${head} · 经营实收 ${money(revenueTotal)}`
+                + (
+                    rawNetProfit < 0
+                        ? "（该月净利润为负，扇区按 0 展示）"
+                        : ""
+                )
+                + " · 点击扇区查看明细";
+
+        }
+
     }
 
 }
@@ -1319,7 +1666,7 @@ function resizeHomeCharts() {
 
     /**
      * 窗口跨过 440px 断点时，
-     * 营业收入构成饼图需要重渲染一次决定是否用简称。
+     * 经营实收构成饼图需要重渲染一次决定是否用简称。
      */
 
     const compositionEl =
@@ -1411,15 +1758,6 @@ function initSupplierPaymentClick() {
      */
     section.onclick = function () {
 
-        const result =
-            confirm(
-                "是否查看货佬款项详情？"
-            );
-
-
-        if (!result) {
-            return;
-        }
         loadPage(
             "supplier_detail"
         );
@@ -1449,19 +1787,6 @@ function initConsumableExpenseClick() {
 
 
     section.onclick = function () {
-
-        const result =
-            confirm(
-                "是否查看非食材耗材详情？"
-            );
-
-
-        if (!result) {
-
-            return;
-
-        }
-
 
         loadPage(
             "consumable_detail"

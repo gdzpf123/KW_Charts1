@@ -366,15 +366,105 @@
 
 
 /* =========================================================
-   营业收入构成饼图
+   经营实收构成饼图
 
-   11 项图例在窄屏会折成多行，
+   一级只画 6 个大类、图例一行，
+   高度比 13 项版收一档即可。
    ID 选择器优先级高于 components.css 的 .pie-chart，
    不受 responsive.css 高度覆盖，避免外置标签压住图例。
    ========================================================= */
 
 #composition {
-    height: 380px;
+    height: 360px;
+}
+
+
+/* =========================================================
+   经营实收构成：下钻返回按钮
+
+   跟随 .card-title 的 flex 布局靠右显示，
+   只在二级（下钻到某个大类）时出现。
+
+   基础样式按移动优先写成「手指友好」尺寸：
+   44px 高、内边距够宽，实测手机上也就好点得多；
+   桌面端在 responsive.css 的 min-width:600px 里收小。
+   ========================================================= */
+
+.drill-back {
+    flex: none;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-left: 12px;
+
+    min-height: 44px;
+
+    padding:
+        0
+        18px;
+
+    color:
+        #4b5563;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    line-height: 1;
+
+    white-space: nowrap;
+
+    background:
+        #f3f4f6;
+
+    border:
+        1px solid
+        rgba(0, 0, 0, .06);
+
+    border-radius: 999px;
+
+    cursor: pointer;
+
+    /* 去掉移动端点击高亮，避免整块闪一下 */
+    -webkit-tap-highlight-color:
+        transparent;
+
+    /* 消除 300ms 双击缩放的等待 */
+    touch-action:
+        manipulation;
+
+    transition:
+        background .15s ease,
+        color .15s ease,
+        transform .1s ease;
+}
+
+.drill-back:hover {
+    color:
+        var(--text);
+
+    background:
+        #e9ebef;
+}
+
+.drill-back:active {
+    color:
+        var(--text);
+
+    background:
+        #e2e6ec;
+
+    transform: scale(.97);
+}
+
+.drill-back[hidden] {
+    display: none;
 }
 
 
