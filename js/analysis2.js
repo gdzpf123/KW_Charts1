@@ -409,6 +409,51 @@ function a2BaseValue(record, key, suffix) {
 
 /**
  * ==============================
+ * 对比基准是否可用
+ * ==============================
+ *
+ * 用于决定「环比 / 同比」要不要显示。
+ *
+ * 判定为不可用的情况（三种）：
+ *
+ *   1. null / undefined
+ *      TXT 里根本没有这一段
+ *      （新开门店没有「去年N月」段）
+ *
+ *   2. 非有限数字（NaN / Infinity）
+ *
+ *   3. 0
+ *      门店首月的「上月」在 TXT 里写作 0.00，
+ *      表示上月没有数据。0 作为营收 / 利率
+ *      类指标的基准也没有比较意义
+ *      （算出来会是 inf% 或 +61.74 个百分点这种废话）。
+ *
+ * 基准不可用时，对应的对比行整体不渲染，
+ * KPI 卡片只留下本月数值（见 renderKPI）。
+ */
+
+function a2HasBase(base) {
+
+    if (
+        base === null
+        || base === undefined
+    ) {
+
+        return false;
+
+    }
+
+
+    const n = Number(base);
+
+
+    return Number.isFinite(n) && n !== 0;
+
+}
+
+
+/**
+ * ==============================
  * 变化率（百分比）
  * ==============================
  */
@@ -1042,6 +1087,22 @@ function renderKPI() {
 
 
             /**
+             * 对比行是否展示
+             *
+             * 新开门店（桃源居店 2026 年新开）没有去年同月数据，
+             * TXT 里也没有「去年N月」段 → 不显示同比；
+             * 门店首月的上月值为 0（等于没有上月）→ 不显示环比。
+             * 两个都没有时，卡片只剩本月数值。
+             */
+
+            const showMom =
+                a2HasBase(momBase);
+
+            const showYoy =
+                a2HasBase(yoyBase);
+
+
+            /**
              * 变化文本：比率类用「个百分点」
              */
             const changeText = v =>
@@ -1058,6 +1119,35 @@ function renderKPI() {
                     : a2Money(curr);
 
 
+            const changesHtml =
+                showMom || showYoy
+                    ? `
+
+                    <div class="a2-kpi-changes">
+
+                        ${showMom
+                            ? `<div class="${a2ChangeClass(
+                                momChange
+                            )}">环比 ${changeText(
+                                momChange
+                            )}</div>`
+                            : ""}
+
+
+                        ${showYoy
+                            ? `<div class="${a2ChangeClass(
+                                yoyChange
+                            )}">同比 ${changeText(
+                                yoyChange
+                            )}</div>`
+                            : ""}
+
+                    </div>
+
+                    `
+                    : "";
+
+
             return `
 
                 <div class="a2-kpi-card">
@@ -1070,22 +1160,7 @@ function renderKPI() {
                         ${formattedValue}
                     </div>
 
-                    <div class="a2-kpi-changes">
-
-                        <div class="${a2ChangeClass(momChange)}">
-
-                            环比 ${changeText(momChange)}
-
-                        </div>
-
-
-                        <div class="${a2ChangeClass(yoyChange)}">
-
-                            同比 ${changeText(yoyChange)}
-
-                        </div>
-
-                    </div>
+                    ${changesHtml}
 
                 </div>
 
@@ -1296,6 +1371,33 @@ function renderTrend() {
 
 
     /**
+     * 是否真的有去年同期数据
+     *
+     * 新开门店（桃源居店）TXT 没有「去年N月」段，
+     * 本地也没有去年记录 → 全是 null。
+     * 这时不画「去年同月」线，同时把上方的
+     * 同比开关一起隐藏，避免出现空图例 / 无效开关。
+     */
+
+    const hasYoY =
+        yoyData.some(a2HasBase);
+
+
+    const yoyToggle =
+        document.getElementById(
+            "a2ToggleYoYLabel"
+        );
+
+
+    if (yoyToggle) {
+
+        yoyToggle.style.display =
+            hasYoY ? "" : "none";
+
+    }
+
+
+    /**
      * series 装配
      */
 
@@ -1323,7 +1425,7 @@ function renderTrend() {
     ];
 
 
-    if (a2ShowYoY) {
+    if (a2ShowYoY && hasYoY) {
 
         series.push({
 
@@ -1400,7 +1502,7 @@ function renderTrend() {
         ...values
     ];
 
-    if (a2ShowYoY) {
+    if (a2ShowYoY && hasYoY) {
         yoyData.forEach(v => {
             if (
                 v !== null &&

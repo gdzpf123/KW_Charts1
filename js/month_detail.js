@@ -52,7 +52,9 @@ async function initMonthDetailPage() {
             );
 
         store =
-            params.get("store") || "西乡店";
+            resolveStoreFromURL(
+                "西乡店"
+            );
 
         month =
             params.get("month");

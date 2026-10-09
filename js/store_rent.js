@@ -14,13 +14,7 @@ let storeRentChart = null;
  */
 function getStoreRentStore() {
 
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-    return (
-        params.get("store") ||
+    return resolveStoreFromURL(
         "西乡店"
     );
 

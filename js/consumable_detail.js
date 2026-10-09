@@ -28,10 +28,9 @@ function initConsumableDetailPage() {
     const store =
         (typeof currentStore !== "undefined"
             && currentStore) ||
-        new URLSearchParams(
-            window.location.search
-        ).get("store") ||
-        "西乡店";
+        resolveStoreFromURL(
+            "西乡店"
+        );
 
 
     /**

@@ -123,7 +123,15 @@
 
         <div class="a2-trend-toggles">
 
-            <label class="a2-toggle">
+            <!--
+                同比开关：
+                门店没有去年同期数据时（如新开的桃源居店），
+                由 renderTrend() 把这个 label 整体隐藏。
+            -->
+
+            <label
+                class="a2-toggle"
+                id="a2ToggleYoYLabel">
 
                 <input
                     type="checkbox"

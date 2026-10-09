@@ -68,27 +68,18 @@ function syncBottomNavVisibility(page) {
 let currentPage = "home";
 let currentStore = getStoreFromURL();
 
+/**
+ * 门店来源
+ *
+ * 分享版（单门店包）由 store-lock.js 锁定门店，
+ * URL 参数会被忽略；开发版行为不变。
+ */
+
 function getStoreFromURL() {
 
-    const params =
-
-        new URLSearchParams(
-
-            window.location.search
-
-        );
-
-    const store =
-
-        params.get("store");
-
-    if (store) {
-
-        return store;
-
-    }
-
-    return "西乡店";
+    return resolveStoreFromURL(
+        "西乡店"
+    );
 
 }
 

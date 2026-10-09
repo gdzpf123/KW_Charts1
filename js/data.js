@@ -261,13 +261,35 @@ function getValueParts(text, name) {
         );
 
 
+    /**
+     * 数值片段：兼容千分位。
+     *
+     * TXT 里「经营实收」「净利润」两行的去年值
+     * 会带千分位逗号，例如：
+     *
+     *   经营实收本月 743075.67,上月 695071.34,
+     *   去年8月 768,163.90,去年平均 745,539.99
+     *
+     * 旧写法 [-+]?\d+(\.\d+)? 只能吃到 "768"
+     * （遇到逗号就断），导致同比值严重偏小。
+     * 这里放开整数部分的分组写法：
+     *
+     *   \d+            连续数字（1 位以上都行）
+     *   (?:,\d{3})*    其后可跟任意组 3 位分组
+     *   (?:\.\d+)?     可选小数
+     */
+
+    const NUM =
+        "([-+]?\\d+(?:,\\d{3})*(?:\\.\\d+)?)";
+
+
     const regex =
         new RegExp(
             escapedName +
-            "本月\\s*([-+]?\\d+(?:\\.\\d+)?)%?" +
-            "(?:,上月\\s*([-+]?\\d+(?:\\.\\d+)?)%?)?" +
-            "(?:,去年\\d+月\\s*([-+]?\\d+(?:\\.\\d+)?)%?)?" +
-            "(?:,去年平均\\s*([-+]?\\d+(?:\\.\\d+)?)%?)?"
+            "本月\\s*" + NUM + "%?" +
+            "(?:,上月\\s*" + NUM + "%?)?" +
+            "(?:,去年\\d+月\\s*" + NUM + "%?)?" +
+            "(?:,去年平均\\s*" + NUM + "%?)?"
         );
 
 
@@ -292,17 +314,26 @@ function getValueParts(text, name) {
     }
 
 
+    /**
+     * 千分位逗号要去掉后再转数字，
+     * 否则 "768,163.90" 会变成 NaN。
+     */
+
+    const toNum =
+        raw =>
+            raw === undefined
+                ? null
+                : Number(
+                    String(raw)
+                        .replace(/,/g, "")
+                );
+
+
     return {
-        current: Number(match[1]),
-        prev: match[2] !== undefined
-            ? Number(match[2])
-            : null,
-        lastYear: match[3] !== undefined
-            ? Number(match[3])
-            : null,
-        lastYearAvg: match[4] !== undefined
-            ? Number(match[4])
-            : null
+        current: toNum(match[1]),
+        prev: toNum(match[2]),
+        lastYear: toNum(match[3]),
+        lastYearAvg: toNum(match[4])
     };
 
 }
@@ -1473,6 +1504,18 @@ function parseStoreTxt(
      * -----------------------------------------------------
      */
 
+    const totalRevenueParts =
+        getValueParts(
+            text,
+            "总营业额(+)"
+        );
+
+    const totalDiscountParts =
+        getValueParts(
+            text,
+            "总优惠减免(-)"
+        );
+
     const operatingIncomeParts =
         getValueParts(
             text,
@@ -1505,28 +1548,41 @@ function parseStoreTxt(
 
 
     /**
-     * 营业收入（经营实收 - 总手续费）的基准值
+     * 营业收入基准值
+     *
+     * 口径必须与 record.revenue 完全一致：
+     *
+     *     营业收入 = 总营业额 − 总优惠减免
+     *
+     * 所以上月 / 去年同月 / 去年平均
+     * 一律用「总营业额 − 总优惠减免」的同口径推算，
+     * 不能再拿「经营实收 − 总手续费」凑
+     * （那是经营实收的口径，数值相差上万，
+     *   曾导致营收走势图的去年同月线严重跑偏）。
+     *
+     * 任一侧缺数据 → null，
+     * 由分析页回退到本地去年同月记录。
      */
 
     const revenuePrev =
-        operatingIncomeParts.prev !== null
-        && totalFeeParts.prev !== null
-            ? operatingIncomeParts.prev -
-                totalFeeParts.prev
+        totalRevenueParts.prev !== null
+        && totalDiscountParts.prev !== null
+            ? totalRevenueParts.prev -
+                totalDiscountParts.prev
             : null;
 
     const revenueLastYear =
-        operatingIncomeParts.lastYear !== null
-        && totalFeeParts.lastYear !== null
-            ? operatingIncomeParts.lastYear -
-                totalFeeParts.lastYear
+        totalRevenueParts.lastYear !== null
+        && totalDiscountParts.lastYear !== null
+            ? totalRevenueParts.lastYear -
+                totalDiscountParts.lastYear
             : null;
 
     const revenueLastYearAvg =
-        operatingIncomeParts.lastYearAvg !== null
-        && totalFeeParts.lastYearAvg !== null
-            ? operatingIncomeParts.lastYearAvg -
-                totalFeeParts.lastYearAvg
+        totalRevenueParts.lastYearAvg !== null
+        && totalDiscountParts.lastYearAvg !== null
+            ? totalRevenueParts.lastYearAvg -
+                totalDiscountParts.lastYearAvg
             : null;
 
 
@@ -1802,6 +1858,7 @@ function parseStoreTxt(
 const STORE_MONTHS = {
 
     "西乡店": [
+        "2026-09",
         "2026-08",
         "2026-07",
         "2026-06",
@@ -1812,7 +1869,8 @@ const STORE_MONTHS = {
         "2026-01",
     ],
     "碧海湾店": [
-         "2026-08",
+        "2026-09",
+        "2026-08",
         "2026-07",
         "2026-06",
         "2026-05",
@@ -1822,7 +1880,8 @@ const STORE_MONTHS = {
         "2026-01",
     ],
     "沙井店": [
-         "2026-08",
+        "2026-09",
+        "2026-08",
         "2026-07",
         "2026-06",
         "2026-05",
@@ -1832,7 +1891,8 @@ const STORE_MONTHS = {
         "2026-01",
     ],
     "塘头店": [
-         "2026-08",
+        "2026-09",
+        "2026-08",
         "2026-07",
         "2026-06",
         "2026-05",
@@ -1842,7 +1902,8 @@ const STORE_MONTHS = {
         "2026-01",
     ],
     "石龙仔店": [
-         "2026-08",
+        "2026-09",
+        "2026-08",
         "2026-07",
         "2026-06",
         "2026-05",
@@ -1850,8 +1911,50 @@ const STORE_MONTHS = {
         "2026-03",
         "2026-02",
         "2026-01",
+    ],
+     "桃源居店": [
+        "2026-09",
+        "2026-08",
+        "2026-07",
+        "2026-06",
     ]
 };
+
+
+/**
+ * =========================================================
+ * 单门店锁定
+ *
+ * 分享版（构建产物）会设置 __KW_LOCKED_STORE__，
+ * 此时只保留本店：门店列表里看不到其它门店，
+ * 对应的数据文件也不会被打进包里。
+ * =========================================================
+ */
+
+if (
+    typeof getLockedStore === "function"
+    && getLockedStore()
+) {
+
+    const lockedStore =
+        getLockedStore();
+
+    Object.keys(
+        STORE_MONTHS
+    )
+        .forEach(
+            name => {
+
+                if (name !== lockedStore) {
+
+                    delete STORE_MONTHS[name];
+
+                }
+
+            }
+        );
+
+}
 
 
 /**

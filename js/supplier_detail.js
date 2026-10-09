@@ -72,7 +72,34 @@ function renderSupplierList(
     }
 
 
-    list.forEach(
+    /**
+     * -----------------------------------------------------
+     * 按金额从高到低排序后再渲染
+     * -----------------------------------------------------
+     *
+     * 只排序副本，不改动原始数据：
+     * supplierDetails.food / nonFood 仍保持
+     * TXT 里的原始顺序，合计等其它消费方
+     * 不受影响。
+     *
+     * 金额相同的项保持原本的相对顺序
+     * （Array.sort 在现代浏览器里是稳定的）。
+     *
+     * amount 非数字时按 0 处理，兜底排到最后。
+     * -----------------------------------------------------
+     */
+
+    const sorted =
+        list
+            .slice()
+            .sort(
+                (a, b) =>
+                    (Number(b.amount) || 0) -
+                    (Number(a.amount) || 0)
+            );
+
+
+    sorted.forEach(
         (item, index) => {
 
             const row =
@@ -83,7 +110,6 @@ function renderSupplierList(
 
             row.className =
                 "supplier-row";
-
 
             row.innerHTML = `
 
@@ -167,10 +193,9 @@ function initSupplierDetailPage() {
     const store =
         (typeof currentStore !== "undefined"
             && currentStore) ||
-        new URLSearchParams(
-            window.location.search
-        ).get("store") ||
-        "西乡店";
+        resolveStoreFromURL(
+            "西乡店"
+        );
 
 
     /**
