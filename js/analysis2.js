@@ -1001,6 +1001,12 @@ function renderKPI() {
         },
 
         {
+            key: "operatingIncome",
+            name: "经营实收",
+            isPercent: false
+        },
+
+        {
             key: "grossMargin",
             name: "毛利率",
             isPercent: true
@@ -1119,6 +1125,27 @@ function renderKPI() {
                     : a2Money(curr);
 
 
+            /**
+             * 扭亏为盈
+             *
+             * 净利润的基准（上月 / 去年同月）为负、本月为正时，
+             * (c−p)/p 会把符号算反（如沙井店 9 月去年 −18708.82
+             * → −299.7% 这种无意义值），此时直接显示「扭亏为盈」。
+             */
+            const isTurnaround = base =>
+                m.key === "netProfit"
+                && Number(base) < 0
+                && Number(curr) > 0;
+
+
+            const momTurnaround =
+                showMom && isTurnaround(momBase);
+
+
+            const yoyTurnaround =
+                showYoy && isTurnaround(yoyBase);
+
+
             const changesHtml =
                 showMom || showYoy
                     ? `
@@ -1126,20 +1153,28 @@ function renderKPI() {
                     <div class="a2-kpi-changes">
 
                         ${showMom
-                            ? `<div class="${a2ChangeClass(
-                                momChange
-                            )}">环比 ${changeText(
-                                momChange
-                            )}</div>`
+                            ? `<div class="${momTurnaround
+                                ? "a2-kpi-change up"
+                                : a2ChangeClass(
+                                    momChange
+                                )}">环比 ${momTurnaround
+                                ? "扭亏为盈"
+                                : changeText(
+                                    momChange
+                                )}</div>`
                             : ""}
 
 
                         ${showYoy
-                            ? `<div class="${a2ChangeClass(
-                                yoyChange
-                            )}">同比 ${changeText(
-                                yoyChange
-                            )}</div>`
+                            ? `<div class="${yoyTurnaround
+                                ? "a2-kpi-change up"
+                                : a2ChangeClass(
+                                    yoyChange
+                                )}">同比 ${yoyTurnaround
+                                ? "扭亏为盈"
+                                : changeText(
+                                    yoyChange
+                                )}</div>`
                             : ""}
 
                     </div>

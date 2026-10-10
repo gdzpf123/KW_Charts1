@@ -7,6 +7,587 @@
 
 /**
  * =========================================================
+ * 非食材耗材合计 · 月份趋势图
+ * =========================================================
+ */
+
+let consumableTrendChart = null;
+
+
+/**
+ * 趋势图取值
+ *
+ * 与页面顶部「非食材耗材合计」卡片同口径：
+ * 取账面值 record.consumableExpense
+ * （= TXT「非食材 耗材 支出本月」），
+ * 明细列表本身不完整（列表求和 < 账面值），
+ * 不能作为合计依据。
+ */
+function consumableTrendValue(record) {
+
+    const value =
+        Number(
+            record.consumableExpense
+            || record.otherExpense
+        );
+
+
+    return Number.isFinite(value)
+        ? value
+        : 0;
+
+}
+
+
+/**
+ * 该月份是否有可用的耗材数据
+ *
+ * parseStoreTxt 对空文本 / 没有耗材段的 TXT
+ * 也会返回对象（各项为 0），不过滤的话
+ * 趋势图上会冒出一个 ¥0 的坑。
+ */
+function hasConsumableTrendData(record) {
+
+    return consumableTrendValue(record) !== 0;
+
+}
+
+
+/**
+ * 月份简称（跨年时非首年带年份前缀）
+ */
+function consumableMonthShort(
+    month,
+    firstYear
+) {
+
+    const [y, m] =
+        month.split("-");
+
+    const year =
+        Number(y);
+
+
+    if (
+        firstYear !== null
+        && year !== firstYear
+    ) {
+
+        return `${String(year).slice(-2)}年${Number(m)}月`;
+
+    }
+
+
+    return `${Number(m)}月`;
+
+}
+
+
+/**
+ * 加载近12个月数据并渲染趋势图
+ *
+ * 用 loadStoreData 逐个读取，
+ * 不经过 loadStoreMonthsData，
+ * 避免覆盖全局 STORE_DATA。
+ */
+async function loadConsumableTrend(store) {
+
+    console.log(
+        "========== 加载耗材趋势 =========="
+    );
+
+
+    try {
+
+        const months =
+            getMonths(store);
+
+
+        if (
+            !months
+            || months.length === 0
+        ) {
+
+            console.warn(
+                "没有找到门店历史月份：",
+                store
+            );
+
+
+            renderConsumableTrendChart(
+                store,
+                [],
+                []
+            );
+
+            return;
+
+        }
+
+
+        const targetMonths =
+            months
+                .slice(0, 12)
+                .sort();
+
+
+        console.log(
+            "趋势图读取月份：",
+            targetMonths
+        );
+
+
+        const results =
+            await Promise.all(
+                targetMonths.map(
+                    month =>
+                        loadStoreData(
+                            store,
+                            month
+                        )
+                            .catch(
+                                err => {
+
+                                    console.warn(
+                                        `加载 ${store}/${month} 失败：`,
+                                        err.message
+                                    );
+
+                                    return null;
+
+                                }
+                            )
+                )
+            );
+
+
+        const records =
+            results.filter(
+                r =>
+                    r !== null
+                    && hasConsumableTrendData(r)
+            );
+
+
+        if (records.length === 0) {
+
+            renderConsumableTrendChart(
+                store,
+                [],
+                []
+            );
+
+            return;
+
+        }
+
+
+        const firstYear =
+            Number(
+                records[0].month.split("-")[0]
+            );
+
+
+        const labels =
+            records.map(
+                r =>
+                    consumableMonthShort(
+                        r.month,
+                        firstYear
+                    )
+            );
+
+
+        const values =
+            records.map(consumableTrendValue);
+
+
+        renderConsumableTrendChart(
+            store,
+            labels,
+            values
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "加载耗材趋势失败：",
+            error
+        );
+
+    }
+
+}
+
+
+/**
+ * 渲染趋势图
+ */
+function renderConsumableTrendChart(
+    store,
+    labels,
+    values
+) {
+
+    const chartDom =
+        document.getElementById(
+            "consumableTrendChart"
+        );
+
+
+    if (!chartDom) {
+
+        console.error(
+            "找不到 consumableTrendChart"
+        );
+
+        return;
+
+    }
+
+
+    const subtitleElement =
+        document.getElementById(
+            "consumableTrendSubtitle"
+        );
+
+
+    if (subtitleElement) {
+
+        subtitleElement.textContent =
+            labels.length > 0
+                ? `${store} · 近${labels.length}个月`
+                : "暂无数据";
+
+    }
+
+
+    if (
+        typeof echarts ===
+        "undefined"
+    ) {
+
+        console.error(
+            "ECharts 没有加载"
+        );
+
+        return;
+
+    }
+
+
+    if (consumableTrendChart) {
+
+        consumableTrendChart.dispose();
+
+        consumableTrendChart = null;
+
+    }
+
+
+    consumableTrendChart =
+        echarts.init(
+            chartDom
+        );
+
+
+    const avg =
+        values.length > 0
+            ? values.reduce(
+                (sum, v) => sum + v,
+                0
+            ) / values.length
+            : 0;
+
+
+    const series = [
+
+        {
+
+            name:
+                "非食材耗材合计",
+
+            type:
+                "line",
+
+            smooth:
+                true,
+
+            symbol:
+                "circle",
+
+            symbolSize:
+                6,
+
+            data:
+                values,
+
+            lineStyle: {
+
+                width: 3,
+
+                color: "#3478f6"
+
+            },
+
+            itemStyle: {
+
+                color: "#3478f6"
+
+            },
+
+            areaStyle: {
+
+                color: "#3478f620"
+
+            }
+
+        }
+
+    ];
+
+
+    if (values.length > 1) {
+
+        series.push({
+
+            name:
+                "均值",
+
+            type:
+                "line",
+
+            symbol:
+                "none",
+
+            data:
+                values.map(
+                    () => avg
+                ),
+
+            lineStyle: {
+
+                width: 1.5,
+
+                color: "#ef233c",
+
+                type: "dashed"
+
+            },
+
+            itemStyle: {
+
+                color: "#ef233c"
+
+            },
+
+            tooltip: {
+
+                show: false
+
+            }
+
+        });
+
+    }
+
+
+    consumableTrendChart.setOption({
+
+        animationDuration: 500,
+
+        grid: {
+
+            left: 8,
+
+            right: 12,
+
+            top: 35,
+
+            bottom: 20,
+
+            containLabel: true
+
+        },
+
+        legend: {
+
+            top: 0,
+
+            left: "center",
+
+            textStyle: {
+
+                color: "#666",
+
+                fontSize: 11
+
+            }
+
+        },
+
+        tooltip: {
+
+            trigger: "axis",
+
+            formatter: function (params) {
+
+                if (
+                    !params
+                    || params.length === 0
+                ) {
+
+                    return "";
+
+                }
+
+
+                const rows =
+                    params.map(
+                        item => {
+
+                            const value =
+                                Number(item.value) || 0;
+
+
+                            return (
+                                `${item.marker}${item.seriesName}：`
+                                + `<strong>${formatSupplierMoney(value)}</strong>`
+                            );
+
+                        }
+                    );
+
+
+                return (
+                    `${params[0].axisValue}<br>`
+                    + rows.join("<br>")
+                );
+
+            }
+
+        },
+
+        xAxis: {
+
+            type: "category",
+
+            data: labels,
+
+            boundaryGap: false,
+
+            axisTick: {
+
+                show: false
+
+            },
+
+            axisLine: {
+
+                lineStyle: {
+
+                    color: "#e5e8ec"
+
+                }
+
+            },
+
+            axisLabel: {
+
+                color: "#8a8f98",
+
+                fontSize: 11
+
+            }
+
+        },
+
+        yAxis: {
+
+            type: "value",
+
+            axisLine: {
+
+                show: false
+
+            },
+
+            axisTick: {
+
+                show: false
+
+            },
+
+            axisLabel: {
+
+                color: "#8a8f98",
+
+                fontSize: 11,
+
+                formatter: function (value) {
+
+                    return (
+                        "¥"
+                        + Number(value).toLocaleString(
+                            "zh-CN"
+                        )
+                    );
+
+                }
+
+            },
+
+            splitLine: {
+
+                lineStyle: {
+
+                    color: "#e5e8ec"
+
+                }
+
+            }
+
+        },
+
+        series:
+            series
+
+    });
+
+
+    setTimeout(
+        function () {
+
+            if (consumableTrendChart) {
+
+                consumableTrendChart.resize();
+
+            }
+
+        },
+        50
+    );
+
+}
+
+
+/**
+ * 调整图表尺寸（由 app.js 的 resizeCharts 调用）
+ */
+function resizeConsumableDetailChart() {
+
+    if (consumableTrendChart) {
+
+        consumableTrendChart.resize();
+
+    }
+
+}
+
+
+/**
+ * =========================================================
  * 初始化
  * =========================================================
  */
@@ -58,6 +639,15 @@ function initConsumableDetailPage() {
         "当前月份：",
         month
     );
+
+
+    /**
+     * 顶部「非食材耗材合计 · 月份趋势」
+     *
+     * 自己加载近12个月，与当前月份记录无关，
+     * 因此放在最前面且不阻塞下面的明细渲染。
+     */
+    loadConsumableTrend(store);
 
 
     /**

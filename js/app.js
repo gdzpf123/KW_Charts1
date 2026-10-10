@@ -12,6 +12,8 @@ const PAGE_PATH = {
 
     analysis2: "pages/analysis2.html",
 
+    yearly: "pages/yearly.html",
+
     supplier_detail: "pages/supplier_detail.html",
 
     consumable_detail: "pages/consumable_detail.html",
@@ -32,7 +34,8 @@ const TAB_PAGES = new Set([
 
     "home",
     "history",
-    "analysis2"
+    "analysis2",
+    "yearly"
 
 ]);
 
@@ -258,6 +261,19 @@ async function loadPage(page) {
 
         }
 
+        else if (page === "yearly") {
+
+            if (
+                typeof initYearlyPage ===
+                "function"
+            ) {
+
+                await initYearlyPage();
+
+            }
+
+        }
+
         else if (page === "supplier_detail") {
 
             if (
@@ -438,6 +454,34 @@ function resizeCharts() {
     ) {
 
         resizeAnalysis2Charts();
+
+    }
+
+
+    /**
+     * 货佬款项详情页
+     */
+
+    if (
+        typeof resizeSupplierDetailChart ===
+        "function"
+    ) {
+
+        resizeSupplierDetailChart();
+
+    }
+
+
+    /**
+     * 非食材耗材详情页
+     */
+
+    if (
+        typeof resizeConsumableDetailChart ===
+        "function"
+    ) {
+
+        resizeConsumableDetailChart();
 
     }
 

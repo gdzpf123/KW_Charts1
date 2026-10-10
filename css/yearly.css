@@ -1,0 +1,97 @@
+/* =========================================================
+   年度总结页
+   ========================================================= */
+
+/* ---------- 年度累计 KPI ---------- */
+.yearly-kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 13px;
+}
+
+.yearly-kpi {
+    padding: 14px;
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+}
+
+.yearly-kpi-label {
+    color: var(--subtext);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.yearly-kpi-value {
+    margin-top: 6px;
+    color: var(--text);
+    font-size: 21px;
+    font-weight: 750;
+    letter-spacing: -.4px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---------- 每月明细 List ---------- */
+.yearly-list-card {
+    padding-bottom: 8px;
+}
+
+.yearly-table {
+    padding: 6px 16px 12px;
+}
+
+.yearly-head,
+.yearly-row {
+    display: grid;
+    grid-template-columns: 40px 1.55fr 1.25fr 1fr 1fr;
+    gap: 4px;
+    align-items: center;
+}
+
+.yearly-head {
+    color: var(--subtext);
+    font-size: 11px;
+    padding: 10px 0 6px;
+    border-bottom: 1px solid var(--line);
+}
+
+.yearly-row {
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.yearly-row:last-child {
+    border-bottom: none;
+}
+
+.yearly-month {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.yearly-cell {
+    color: var(--text);
+    font-size: 12px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* 桌面端：KPI 改四列，金额列可更宽 */
+@media (min-width: 600px) {
+    .yearly-kpis {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .yearly-head,
+    .yearly-row {
+        grid-template-columns: 48px 1.6fr 1.3fr 1fr 1fr;
+    }
+
+    .yearly-cell {
+        font-size: 13px;
+    }
+}
